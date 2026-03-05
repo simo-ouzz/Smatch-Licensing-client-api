@@ -1,0 +1,303 @@
+Metadata-Version: 2.4
+Name: smatch-licensing-api-client
+Version: 1.0.0
+Summary: Python client SDK for licensing API
+Home-page: https://github.com/yourcompany/smatch-licensing-api-client
+Author: Your Company
+Author-email: dev@yourcompany.com
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: requests>=2.28.0
+Requires-Dist: pynacl>=1.5.0
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# smatch-licensing-api-client
+
+Python client SDK for licensing API - Simple license verification for your applications.
+
+## Installation
+
+```bash
+pip install smatch-licensing-api-client
+```
+
+## Quick Start
+
+```python
+from smatch_licensing_api_client import LicenseClient
+
+# Initialize the client
+client = LicenseClient(
+    server_url="http://localhost:8000",
+    api_key="sk_your_api_key"
+)
+
+# Simple verification - returns True or False
+if client.verify("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX"):
+    print("License is valid!")
+else:
+    print("License is invalid!")
+```
+
+## License Key Format
+
+License keys follow this format: `XXXXX_XXXXX_XXXXX_XXXXX_XXXXX`
+
+Example: `5YVX3_OZE2V_VBF32_JVRD3_7GSU3`
+
+## API Reference
+
+### LicenseClient
+
+The main class for interacting with the licensing API.
+
+#### Initialization
+
+```python
+client = LicenseClient(
+    server_url="http://localhost:8000",  # Your licensing API URL
+    api_key="sk_your_api_key",           # Your API key
+    timeout=30,                          # Request timeout (optional)
+    verify_ssl=True                      # Verify SSL certificates (optional)
+)
+```
+
+You can also set the API key via environment variable:
+
+```bash
+export LICENSING_API_KEY="sk_your_api_key"
+```
+
+```python
+# No need to pass api_key if env var is set
+client = LicenseClient(server_url="http://localhost:8000")
+```
+
+#### verify(key, full_details=False)
+
+Verify a license key.
+
+**Parameters:**
+- `key` (str): License key to verify
+- `full_details` (bool): If True, returns LicenseResponse with full details
+
+**Returns:**
+- If `full_details=False`: `bool` (True if valid, False if invalid)
+- If `full_details=True`: `LicenseResponse` object
+
+**Example:**
+
+```python
+# Simple usage
+is_valid = client.verify("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX")
+
+# Full details
+result = client.verify("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX", full_details=True)
+print(f"Valid: {result.is_valid}")
+print(f"Expires: {result.expires}")
+print(f"Days remaining: {result.remaining_days}")
+print(f"State: {result.state}")
+print(f"Reason: {result.reason}")  # If invalid: "expired", "revoked", etc.
+```
+
+#### activate(key)
+
+Activate a license on the server.
+
+**Parameters:**
+- `key` (str): License key to activate
+
+**Returns:** `bool` - True if activation successful
+
+```python
+if client.activate("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX"):
+    print("License activated!")
+```
+
+#### deactivate(key)
+
+Deactivate (unsuspend) a license.
+
+**Parameters:**
+- `key` (str): License key to deactivate
+
+**Returns:** `bool` - True if deactivation successful
+
+```python
+if client.deactivate("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX"):
+    print("License deactivated!")
+```
+
+#### get_license_details(key)
+
+Get full license details from the server.
+
+**Parameters:**
+- `key` (str): License key
+
+**Returns:** `dict` or `None` - Dictionary with license details
+
+```python
+details = client.get_license_details("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX")
+if details:
+    print(details["license_key"])
+    print(details["state"])
+    print(details["expiry_date"])
+```
+
+#### save_license(key, filepath)
+
+Save a license to a file for offline verification.
+
+**Parameters:**
+- `key` (str): License key to save
+- `filepath` (str): Path to save the license file
+
+**Returns:** `bool` - True if saved successfully
+
+```python
+client.save_license("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX", "license.dat")
+```
+
+#### verify_offline(filepath)
+
+Verify a license from a saved file (offline).
+
+**Parameters:**
+- `filepath` (str): Path to the saved license file
+
+**Returns:** `bool` - True if license is valid
+
+```python
+if client.verify_offline("license.dat"):
+    print("Offline license is valid!")
+```
+
+#### load_license(filepath)
+
+Load a license from a file.
+
+**Parameters:**
+- `filepath` (str): Path to the license file
+
+**Returns:** `LicenseKey` or `None`
+
+```python
+license_key = client.load_license("license.dat")
+if license_key:
+    print(f"Expires: {license_key.expires}")
+    print(f"State: {license_key.state}")
+```
+
+### LicenseResponse
+
+Object returned when using `verify()` with `full_details=True`.
+
+**Attributes:**
+- `is_valid` (bool): Whether license is valid
+- `license_key` (str): The license key
+- `expires` (datetime): Expiration datetime
+- `remaining_days` (int): Days until expiration
+- `state` (str): License state ("active", "suspended", etc.)
+- `reason` (str): If invalid, the reason ("expired", "revoked", etc.)
+- `raw_response` (dict): Raw API response
+
+### Helpers
+
+Utility functions.
+
+#### is_valid_key_format(key)
+
+Check if the license key format is valid.
+
+```python
+from smatch_licensing_api_client import Helpers
+
+if Helpers.is_valid_key_format("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX"):
+    print("Valid format!")
+```
+
+## Error Handling
+
+```python
+from smatch_licensing_api_client import LicenseClient, AuthenticationError, NetworkError
+
+try:
+    client = LicenseClient(
+        server_url="http://localhost:8000",
+        api_key="sk_your_api_key"
+    )
+    
+    if client.verify("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX"):
+        print("Valid!")
+        
+except AuthenticationError:
+    print("Invalid API key")
+except NetworkError:
+    print("Network error - check your connection")
+except Exception as e:
+    print(f"Error: {e}")
+```
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `LICENSING_API_KEY` | API key for authentication |
+
+## Example: Full Integration
+
+```python
+from smatch_licensing_api_client import LicenseClient
+
+# Initialize once at app startup
+client = LicenseClient(
+    server_url="http://localhost:8000",
+    api_key="sk_your_api_key"
+)
+
+def check_license(license_key: str) -> bool:
+    """Check if license is valid."""
+    return client.verify(license_key)
+
+def check_license_detailed(license_key: str) -> dict:
+    """Get detailed license info."""
+    result = client.verify(license_key, full_details=True)
+    return {
+        "valid": result.is_valid,
+        "expires": result.expires,
+        "days_left": result.remaining_days,
+        "state": result.state,
+        "reason": result.reason
+    }
+
+# In your application
+if check_license("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX"):
+    print("Proceed with application")
+else:
+    print("License invalid - please contact support")
+```
+
+## License
+
+MIT License
