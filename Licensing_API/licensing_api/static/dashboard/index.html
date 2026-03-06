@@ -107,15 +107,23 @@
                 <!-- Header -->
                 <header class="page-header-bar">
                     <div>
-                        <h1 class="page-title">Products</h1>
-                        <p class="page-subtitle">Manage your products and licenses</p>
+                        <h1 class="page-title">Products <p class="</h1>
+                       page-subtitle">Manage your products and licenses</p>
                     </div>
-                    <button class="btn btn-primary" id="add-product-btn">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                        </svg>
-                        <span>New Product</span>
-                    </button>
+                    <div style="display: flex; gap: 12px;">
+                        <a href="/sdk-docs" target="_blank" class="btn btn-secondary" title="SDK Documentation">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M2 2h5l1 1v10l-1 1H2V2zm7 0h5v12h-5v-1l-1-1v-8l1-1h1V3h-1l-1 1V2z" stroke="currentColor" stroke-width="1.2"/>
+                            </svg>
+                            <span>Docs</span>
+                        </a>
+                        <button class="btn btn-primary" id="add-product-btn">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <span>New Product</span>
+                        </button>
+                    </div>
                 </header>
 
                 <!-- Products Page -->

@@ -64,6 +64,11 @@ async def dashboard_page_slash():
     return FileResponse(os.path.join(static_dir, "dashboard", "index.html"))
 
 
+@app.get("/sdk-docs", tags=["documentation"])
+async def docs_page():
+    return FileResponse(os.path.join(static_dir, "docs.html"))
+
+
 @app.get("/health", tags=["health"])
 async def health_check() -> dict:
     return {"status": "ok"}
