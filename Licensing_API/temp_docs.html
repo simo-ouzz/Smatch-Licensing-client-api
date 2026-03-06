@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDK Documentation - SMATCH Licensing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a24;
+            --bg-card: #16161f;
+            --bg-hover: #1e1e2a;
+            
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-default: rgba(255, 255, 255, 0.1);
+            
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            
+            --accent-primary: #ff9900;
+            --accent-primary-hover: #ffaa33;
+            --accent-glow: rgba(255, 153, 0, 0.25);
+            
+            --success: #22c55e;
+            --success-bg: rgba(34, 197, 94, 0.12);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.12);
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.12);
+            --info: #3b82f6;
+            --info-bg: rgba(59, 130, 246, 0.12);
+            
+            --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            
+            --sidebar-width: 280px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 32px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        
+        .logo-mark {
+            width: 36px;
+            height: 36px;
+            background: var(--accent-primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo-mark svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        
+        .header-nav {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .header-nav a {
+            padding: 8px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .header-nav a:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+        
+        .header-nav a.active {
+            color: var(--accent-primary);
+            background: var(--accent-glow);
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .lang-toggle {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            padding: 4px;
+        }
+        
+        .lang-btn {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .lang-btn:hover {
+            color: var(--text-primary);
+        }
+        
+        .lang-btn.active {
+            background: var(--accent-primary);
+            color: #000;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: var(--accent-primary);
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-primary-hover);
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-primary);
+        }
+        
+        /* Main Content */
+        .main {
+            display: flex;
+            min-height: calc(100vh - 69px);
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-subtle);
+            padding: 24px 0;
+            position: sticky;
+            top: 69px;
+            height: calc(100vh - 69px);
+            overflow-y: auto;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+        
+        .sidebar-title {
+            padding: 8px 24px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+        
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .sidebar-nav a {
+            padding: 10px 24px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-nav a:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+        
+        .sidebar-nav a.active {
+            color: var(--accent-primary);
+            background: var(--accent-glow);
+            border-left-color: var(--accent-primary);
+        }
+        
+        /* Content */
+        .content {
+            flex: 1;
+            padding: 40px 48px;
+            max-width: 900px;
+        }
+        
+        .content-header {
+            margin-bottom: 40px;
+        }
+        
+        .content-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+        
+        .content-header p {
+            font-size: 1.0625rem;
+            color: var(--text-secondary);
+            max-width: 640px;
+        }
+        
+        /* Sections */
+        .section {
+            margin-bottom: 48px;
+            scroll-margin-top: 100px;
+        }
+        
+        .section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .section h2 .anchor {
+            opacity: 0;
+            color: var(--text-muted);
+            font-weight: 400;
+            transition: opacity 0.2s;
+        }
+        
+        .section:hover h2 .anchor {
+            opacity: 1;
+        }
+        
+        .section p {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-size: 0.9375rem;
+        }
+        
+        .section ul {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            padding-left: 20px;
+        }
+        
+        .section li {
+            margin-bottom: 8px;
+        }
+        
+        /* Code Blocks */
+        .code-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        
+        .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .code-lang {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .code-copy {
+            padding: 6px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .code-copy:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-primary);
+        }
+        
+        .code-copy.copied {
+            color: var(--success);
+            border-color: var(--success);
+        }
+        
+        pre {
+            padding: 20px;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+        
+        code {
+            font-family: var(--font-mono);
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.875em;
+            color: var(--accent-primary);
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: var(--text-primary);
+        }
+        
+        /* Info Boxes */
+        .info-box {
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 12px;
+        }
+        
+        .info-box.info {
+            background: var(--info-bg);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        
+        .info-box.warning {
+            background: var(--warning-bg);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
+        .info-box.success {
+            background: var(--success-bg);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .info-box.danger {
+            background: var(--danger-bg);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .info-box svg {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .info-box p {
+            margin: 0;
+            font-size: 0.875rem;
+        }
+        
+        /* Feature Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.2s;
+        }
+        
+        .feature-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+        
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--accent-glow);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            color: var(--accent-primary);
+        }
+        
+        .feature-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .feature-card p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-tertiary);
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            width: fit-content;
+        }
+        
+        .tab-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+        
+        .tab-btn.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Steps */
+        .steps {
+            counter-reset: step;
+        }
+        
+        .step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-primary);
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .step-content h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .step-content p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        
+        /* Flow Diagram */
+        .flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 24px 0;
+        }
+        
+        .flow-step {
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: 10px;
+            padding: 16px 24px;
+            text-align: center;
+            min-width: 140px;
+        }
+        
+        .flow-step strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .flow-step span {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+        
+        .flow-arrow {
+            color: var(--accent-primary);
+            font-size: 1.25rem;
+        }
+        
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .data-table th {
+            background: var(--bg-tertiary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+        
+        .data-table td {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .data-table code {
+            font-size: 0.8125rem;
+        }
+        
+        /* Back to Dashboard */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+        
+        .back-link:hover {
+            color: var(--accent-primary);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .content {
+                padding: 24px;
+            }
+            
+            .header {
+                padding: 12px 16px;
+            }
+            
+            .header-nav {
+                display: none;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <a href="/" class="logo">
+                <div class="logo-mark">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 10L8 6L12 10L8 14L4 10Z" fill="white" fill-opacity="0.9"/>
+                        <path d="M8 10L12 6L16 10L12 14L8 10Z" fill="white" fill-opacity="0.6"/>
+                    </svg>
+                </div>
+                <span class="logo-text">SMATCH</span>
+            </a>
+            <nav class="header-nav">
+                <a href="#introduction">Introduction</a>
+                <a href="#installation">Installation</a>
+                <a href="#authentication" class="active">SDK Reference</a>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div class="lang-toggle">
+                <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                <button class="lang-btn" data-lang="fr" onclick="setLanguage('fr')">FR</button>
+            </div>
+            <a href="/" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M3 8h10M3 8l4-4M3 8l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Back to Dashboard
+            </a>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main class="main">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title" data-i18n="gettingStarted">Getting Started</div>
+                <nav class="sidebar-nav">
+                    <a href="#introduction">Introduction</a>
+                    <a href="#installation">Installation</a>
+                    <a href="#quickstart">Quick Start</a>
+                </nav>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-title" data-i18n="coreFeatures">Core Features</div>
+                <nav class="sidebar-nav">
+                    <a href="#api-key">API Key Auth</a>
+                    <a href="#validation">License Validation</a>
+                    <a href="#activation">Activation</a>
+                    <a href="#offline">Offline Licensing</a>
+                    <a href="#machine-binding">Machine Binding</a>
+                </nav>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-title" data-i18n="advanced">Advanced</div>
+                <nav class="sidebar-nav">
+                    <a href="#hmac-checksum">HMAC Checksum</a>
+                    <a href="#signatures">NaCl Signatures</a>
+                    <a href="#error-handling">Error Handling</a>
+                    <a href="#api-reference">API Reference</a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Introduction -->
+            <section id="introduction" class="section">
+                <a href="#introduction" class="back-link">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Back to top
+                </a>
+                <div class="content-header">
+                    <h1>SDK Documentation</h1>
+                    <p>Complete guide to integrating the SMATCH Licensing SDK into your application. Secure your software with robust license validation, machine binding, and offline support.</p>
+                </div>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M10 2l7 4v6c0 4.5-3.13 8.23-7 9.5-3.87-1.27-7-5-7-9.5V6l7-4z" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                        </div>
+                        <h3>Secure Validation</h3>
+                        <p>Validate licenses online with API key authentication and rate limiting.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M3 5h14M3 10h14M3 15h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h3>Offline Support</h3>
+                        <p>Validate licenses without internet using HMAC checksums and signatures.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <rect x="2" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                                <rect x="12" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                                <rect x="2" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                                <rect x="12" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                        </div>
+                        <h3>Machine Binding</h3>
+                        <p>Restrict licenses to specific machines using MAC address binding.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h3>Cryptographic Security</h3>
+                        <p>HMAC checksums and NaCl signatures ensure license integrity.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Installation -->
+            <section id="installation" class="section">
+                <h2>Installation <a href="#installation" class="anchor">#</a></h2>
+                <p>Install the SDK using pip:</p>
+                
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">bash</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>pip install smatch-licensing-api-client</code></pre>
+                </div>
+                
+                <p>Or install from source:</p>
+                
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">bash</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>pip install -e ./licensing-api-client</code></pre>
+                </div>
+                
+                <div class="info-box info">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="8" stroke="#3b82f6" stroke-width="1.5"/>
+                        <path d="M10 9v4M10 6.5v0.5" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <p><strong>Requirements:</strong> Python 3.8+ and the <code>requests</code> library. The <code>pynacl</code> library is required for signature verification.</p>
+                </div>
+            </section>
+
+            <!-- Quick Start -->
+            <section id="quickstart" class="section">
+                <h2>Quick Start <a href="#quickstart" class="anchor">#</a></h2>
+                <p>Get started with just a few lines of code:</p>
+                
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">python</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>from smatch_licensing_api_client import LicenseClient
+
+# Initialize the client
+client = LicenseClient(
+    server_url="http://localhost:8000",
+    api_key="sk_your_api_key_here"
+)
+
+# Validate a license
+is_valid = client.validate("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX")
+if is_valid:
+    print("License is valid!")
+else:
+    print("License is invalid!")</code></pre>
+                </div>
+            </section>
+
+            <!-- API Key Auth -->
+            <section id="api-key" class="section">
+                <h2>API Key Authentication <a href="#api-key" class="anchor">#</a></h2>
+                <p>All requests to the licensing API require an API key. You can create API keys from the dashboard.</p>
+                
+                <div class="info-box warning">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 3.333L1.667 17.5h16.666L10 3.333zM10 8.333v3.334M10 15h.008" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <p><strong>Security:</strong> Never expose your API secret key in client-side code. Only the public API key should be used in your applications.</p>
+                </div>
+                
+                <h3 style="font-size: 1.125rem; margin: 24px 0 12px;">Client Configuration</h3>
+                
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">python</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>from smatch_licensing_api_client import LicenseClient
+
+# Basic configuration
+client = LicenseClient(
+    server_url="http://localhost:8000",  # Your licensing server URL
+    api_key="sk_your_api_key",           # Public API key
+    secret_key="your_secret_key",          # Secret key for offline HMAC
+    public_key="your_public_key"          # Public key for signature verification
+)</code></pre>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>server_url</code></td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>Base URL of your licensing server</td>
+                        </tr>
+                        <tr>
+                            <td><code>api_key</code></td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>Public API key from dashboard</td>
+                        </tr>
+                        <tr>
+                            <td><code>secret_key</code></td>
+                            <td>string</td>
+                            <td>No</td>
+                            <td>Secret key for offline HMAC validation</td>
+                        </tr>
+                        <tr>
+                            <td><code>public_key</code></td>
+                            <td>string</td>
+                            <td>No</td>
+                            <td>Public key for cryptographic signatures</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Validation -->
+            <section id="validation" class="section">
+                <h2>License Validation <a href="#validation" class="anchor">#</a></h2>
+                <p>Validate licenses online against the licensing server. This is the most secure method as it checks the server's database directly.</p>
+                
+                <div class="flow">
+                    <div class="flow-step">
+                        <strong>Your App</strong>
+                        <span>Calls validate()</span>
+                    </div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-step">
+                        <strong>SDK</strong>
+                        <span>Sends API request</span>
+                    </div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-step">
+                        <strong>Server</strong>
+                        <span>Checks database</span>
+                    </div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-step">
+                        <strong>Response</strong>
+                        <span>Valid/Invalid</span>
+                    </div>
+                </div>
+                
+                <h3 style="font-size: 1.125rem; margin: 24px 0 12px;">Online Validation</h3>
+                
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">python</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>from smatch_licensing_api_client import LicenseClient
+
+client = LicenseClient(
+    server_url="http://localhost:8000",
+    api_key="sk_your_api_key"
+)
+
+# Validate a license key
+result = client.validate("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX")
+
+if result.is_valid:
+    print(f"License is valid!")
+    print(f"Expires: {result.expires_at}")
+    print(f"State: {result.state}")
+else:
+    print(f"License invalid: {result.reason}")</code></pre>
+                </div>
+                
+                <div class="info-box info">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="8" stroke="#3b82f6" stroke-width="1.5"/>
+                        <path d="M10 9v4M10 6.5v0.5" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <p>The <code>validate()</code> method returns a <code>LicenseResponse</code> object with <code>is_valid</code>, <code>reason</code>, <code>state</code>, and <code>expires_at</code> properties.</p>
+                </div>
+                
+                <h3 style="font-size: 1.125rem; margin: 24px 0 12px;">Validation Response</h3>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>is_valid</code></td>
+                            <td>bool</td>
+                            <td>Whether the license is valid</td>
+                        </tr>
+                        <tr>
+                            <td><code>reason</code></td>
+                            <td>string</td>
+                            <td>Reason if invalid (e.g., "expired", "revoked")</td>
+                        </tr>
+                        <tr>
+                            <td><code>state</code></td>
+                            <td>string</td>
+                            <td>License state: "active", "inactive", "suspended", "revoked"</td>
+                        </tr>
+                        <tr>
+                            <td><code>expires_at</code></td>
+                            <td>datetime</td>
+                            <td>License expiration date</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Activation -->
+            <section id="activation" class="section">
+                <h2>License Activation <a href="#activation" class="anchor">#</a></h2>
+                <p>Activate a license to bind it to a machine. This is required before the license can be used.</p>
+                
+                <div class="info-box info">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="8" stroke="#3b82f6" stroke-width="1.5"/>
+                        <path d="M10 9v4M10 6.5v0.5" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <p>When a license is activated, it's automatically bound to the current machine's MAC address. The max machines setting controls how many machines can bind to the license.</p>
+                </div>
+                
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">python</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>from smatch_licensing_api_client import LicenseClient
+
+client = LicenseClient(
+    server_url="http://localhost:8000",
+    api_key="sk_your_api_key"
+)
+
+# Activate a license
+# This binds the license to the current machine
+success = client.activate("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX")
+
+if success:
+    print("License activated successfully!")
+else:
+    print("Activation failed")</code></pre>
+                </div>
+                
+                <h3 style="font-size: 1.125rem; margin: 24px 0 12px;">Activation Flow</h3>
+                
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Your App Calls activate()</h4>
+                            <p>SDK sends the license key with the machine's MAC address</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Server Validates</h4>
+                            <p>Checks if license exists, is not revoked, and has available machine slots</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Machine Binding</h4>
+                            <p>MAC address is added to the license's allowed machines</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4>Activation Complete</h4>
+                            <p>License state changes to "active"</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Offline Licensing -->
+            <section id="offline" class="section">
+                <h2>Offline Licensing <a href="#offline" class="anchor">#</a></h2>
+                <p>Validate licenses without an internet connection. This is essential for desktop applications that need to work offline.</p>
+                
+                <div class="info-box warning">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 3.333L1.667 17.5h16.666L10 3.333zM10 8.333v3.334M10 15h.008" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <p><strong>Security Note:</strong> Offline validation relies on cryptographic checksums and signatures. Ensure your secret key remains secure.</p>
+                </div>
+                
+                <h3 style="font-size: 1.125rem; margin: 24px 0 12px;">Saving License for Offline Use</h3>
+                
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">python</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>from smatch_licensing_api_client import LicenseClient
+
+client = LicenseClient(
+    server_url="http://localhost:8000",
+    api_key="sk_your_api_key",
+    secret_key="your_secret_key",  # Required for offline HMAC
+    public_key="your_public_key"    # Required for signature verification
+)
+
+# First, validate online
+if client.validate("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX"):
+    # Save license to file for offline use
+    client.save_license("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX", "license.dat")
+    print("License saved for offline use!")</code></pre>
+                </div>
+                
+                <h3 style="font-size: 1.125rem; margin: 24px 0 12px;">Verifying Offline License</h3>
+                
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">python</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>from smatch_licensing_api_client import LicenseClient
+
+client = LicenseClient(
+    server_url="http://localhost:8000",
+    api_key="sk_your_api_key",
+    secret_key="your_secret_key",
+    public_key="your_public_key"
+)
+
+# Verify license file (offline)
+# This checks HMAC checksum and NaCl signature
+is_valid = client.verify_offline("license.dat", check_signature=True)
+
+if is_valid:
+    print("Offline license is valid!")
+else:
+    print("License verification failed - may be tampered or expired")</code></pre>
+                </div>
+                
+                <h3 style="font-size: 1.125rem; margin: 24px 0 12px;">Offline Validation Process</h3>
+                
+                <div class="flow">
+                    <div class="flow-step">
+                        <strong>Load File</strong>
+                        <span>Read license.dat</span>
+                    </div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-step">
+                        <strong>HMAC Check</strong>
+                        <span>Verify checksum</span>
+                    </div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-step">
+                        <strong>Signature</strong>
+                        <span>Verify NaCl sig</span>
+                    </div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-step">
+                        <strong>Expiry</strong>
+                        <span>Check expiration</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Machine Binding -->
+            <section id="machine-binding" class="section">
+                <h2>Machine Binding <a href="#machine-binding" class="anchor">#</a></h2>
+                <p>Restrict licenses to specific machines using MAC address binding. This prevents license sharing.</p>
+                
+                <h3 style="font-size: 1.125rem; margin: 24px 0 12px;">How It Works</h3>
+                
+                <ol style="color: var(--text-secondary); padding-left: 20px; margin-bottom: 20px;">
+                    <li style="margin-bottom: 8px;">Each machine has a unique MAC address</li>
+                    <li style="margin-bottom: 8px;">When activating, the MAC is bound to the license</li>
+                    <li style="margin-bottom: 8px;">License validates by checking the machine's MAC against allowed list</li>
+                    <li style="margin-bottom: 8px;">Max machines setting controls how many devices can use the license</li>
+                </ol>
+                
+                <div class="info-box info">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="8" stroke="#3b82f6" stroke-width="1.5"/>
+                        <path d="M10 9v4M10 6.5v0.5" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <p><strong>Note:</strong> You can set max machines when creating a license or update it later from the dashboard. Use -1 for unlimited machines.</p>
+                </div>
+                
+                <h3 style="font-size: 1.125rem; margin: 24px 0 12px;">Custom MAC Address</h3>
+                
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">python</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>from smatch_licensing_api_client import LicenseClient, get_mac_address
+
+client = LicenseClient(
+    server_url="http://localhost:8000",
+    api_key="sk_your_api_key"
+)
+
+# Auto-detect MAC address
+mac = get_mac_address()
+print(f"Machine MAC: {mac}")
+
+# Or specify a custom MAC
+client.activate("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX", mac_address="AA:BB:CC:DD:EE:FF")</code></pre>
+                </div>
+            </section>
+
+            <!-- HMAC Checksum -->
+            <section id="hmac-checksum" class="section">
+                <h2>HMAC Checksum <a href="#hmac-checksum" class="anchor">#</a></h2>
+                <p>HMAC (Hash-based Message Authentication Code) ensures license data integrity. The secret key is used to generate a checksum that can't be forged without the key.</p>
+                
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">python</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code># HMAC is automatically computed when saving/verifying offline licenses
+# The license file contains:
+# {
+#     "license_key": "XXXXX_XXXXX_XXXXX_XXXXX_XXXXX",
+#     "expiry_date": "2026-04-03T22:46:01",
+#     "checksum": "a1b2c3d4...",  # HMAC-SHA256 of the data
+# }
+
+# To verify manually:
+import hmac
+import hashlib
+
+def verify_checksum(data, checksum, secret_key):
+    expected = hmac.new(
+        secret_key.encode(),
+        data.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, checksum)</code></pre>
+                </div>
+                
+                <div class="info-box danger">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="8" stroke="#ef4444" stroke-width="1.5"/>
+                        <path d="M10 5.5v5M10 14h.008" stroke="#ef4444" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <p><strong>Warning:</strong> Anyone with the secret key can generate valid checksums. Keep your secret key secure and never distribute it in client-side code for production.</p>
+                </div>
+            </section>
+
+            <!-- NaCl Signatures -->
+            <section id="signatures" class="section">
+                <h2>NaCl Signatures <a href="#signatures" class="anchor">#</a></h2>
+                <p>For enhanced security, use Ed25519 digital signatures from the NaCl library. This provides asymmetric cryptography where only the server can sign licenses.</p>
+                
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">python</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>from smatch_licensing_api_client import LicenseClient
+
+client = LicenseClient(
+    server_url="http://localhost:8000",
+    api_key="sk_your_api_key",
+    public_key="53b12a371b91d92c80d4afb8c12bbc3af00c1b426c4f0f1a78f1eac2239bfd9c"
+)
+
+# When verifying offline, enable signature check
+is_valid = client.verify_offline(
+    "license.dat",
+    check_signature=True  # Requires public_key to be set
+)
+
+if is_valid:
+    print("License signature verified!")</code></pre>
+                </div>
+                
+                <div class="info-box success">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M16.667 5L7.5 14.167 3.333 10" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <p><strong>Recommendation:</strong> Always enable signature verification in production. The public key can be safely distributed in your application.</p>
+                </div>
+            </section>
+
+            <!-- Error Handling -->
+            <section id="error-handling" class="section">
+                <h2>Error Handling <a href="#error-handling" class="anchor">#</a></h2>
+                <p>The SDK provides specific exception classes for different error scenarios:</p>
+                
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">python</span>
+                        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>from smatch_licensing_api_client import LicenseClient
+from smatch_licensing_api_client.errors import (
+    LicenseError,
+    LicenseInvalidError,
+    LicenseExpiredError,
+    LicenseRevokedError,
+    LicenseNotFoundError,
+    NetworkError,
+    AuthenticationError
+)
+
+client = LicenseClient(
+    server_url="http://localhost:8000",
+    api_key="sk_your_api_key"
+)
+
+try:
+    result = client.validate("XXXXX_XXXXX_XXXXX_XXXXX_XXXXX")
+except LicenseNotFoundError:
+    print("License not found")
+except LicenseExpiredError:
+    print("License has expired")
+except LicenseRevokedError:
+    print("License has been revoked")
+except NetworkError:
+    print("Network error - check connection")
+except AuthenticationError:
+    print("Invalid API key")
+except LicenseError as e:
+    print(f"License error: {e}")</code></pre>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Exception</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>LicenseNotFoundError</code></td>
+                            <td>License key doesn't exist</td>
+                        </tr>
+                        <tr>
+                            <td><code>LicenseInvalidError</code></td>
+                            <td>License is invalid for other reasons</td>
+                        </tr>
+                        <tr>
+                            <td><code>LicenseExpiredError</code></td>
+                            <td>License has expired</td>
+                        </tr>
+                        <tr>
+                            <td><code>LicenseRevokedError</code></td>
+                            <td>License was revoked</td>
+                        </tr>
+                        <tr>
+                            <td><code>LicenseTamperedError</code></td>
+                            <td>Offline license data was tampered</td>
+                        </tr>
+                        <tr>
+                            <td><code>NetworkError</code></td>
+                            <td>Network connection failed</td>
+                        </tr>
+                        <tr>
+                            <td><code>AuthenticationError</code></td>
+                            <td>Invalid API key</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- API Reference -->
+            <section id="api-reference" class="section">
+                <h2>API Reference <a href="#api-reference" class="anchor">#</a></h2>
+                
+                <h3 style="font-size: 1.125rem; margin: 24px 0 12px;">LicenseClient</h3>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>Parameters</th>
+                            <th>Returns</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>validate(license_key)</code></td>
+                            <td>license_key: str</td>
+                            <td>LicenseResponse</td>
+                            <td>Validate license online</td>
+                        </tr>
+                        <tr>
+                            <td><code>activate(license_key, mac_address?)</code></td>
+                            <td>license_key, mac_address?: str</td>
+                            <td>bool</td>
+                            <td>Activate and bind license</td>
+                        </tr>
+                        <tr>
+                            <td><code>save_license(license_key, filepath)</code></td>
+                            <td>license_key, filepath: str</td>
+                            <td>bool</td>
+                            <td>Save license for offline</td>
+                        </tr>
+                        <tr>
+                            <td><code>verify_offline(filepath, check_signature?)</code></td>
+                            <td>filepath: str, check_signature?: bool</td>
+                            <td>bool</td>
+                            <td>Verify offline license</td>
+                        </tr>
+                        <tr>
+                            <td><code>load_license(filepath)</code></td>
+                            <td>filepath: str</td>
+                            <td>LicenseKey</td>
+                            <td>Load license from file</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3 style="font-size: 1.125rem; margin: 24px 0 12px;">Server Endpoints</h3>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Method</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>/licenses/validate</code></td>
+                            <td>POST</td>
+                            <td>Validate license</td>
+                        </tr>
+                        <tr>
+                            <td><code>/licenses/{key}/activate</code></td>
+                            <td>POST</td>
+                            <td>Activate license</td>
+                        </tr>
+                        <tr>
+                            <td><code>/licenses/{key}/revoke</code></td>
+                            <td>POST</td>
+                            <td>Revoke license</td>
+                        </tr>
+                        <tr>
+                            <td><code>/licenses/{key}/extend</code></td>
+                            <td>POST</td>
+                            <td>Extend license expiry</td>
+                        </tr>
+                        <tr>
+                            <td><code>/licenses/secret-key</code></td>
+                            <td>GET</td>
+                            <td>Get secret key for offline</td>
+                        </tr>
+                        <tr>
+                            <td><code>/licenses/{key}/machines</code></td>
+                            <td>GET/POST</td>
+                            <td>List/bind machines</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // Copy code functionality
+        function copyCode(btn) {
+            const codeBlock = btn.closest('.code-block');
+            const code = codeBlock.querySelector('pre code').textContent;
+            
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+        
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+        
+        // Highlight active nav item on scroll
+        const sections = document.querySelectorAll('.section');
+        const navLinks = document.querySelectorAll('.sidebar-nav a');
+        
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+        
+        // Language Translations
+        const translations = {
+            en: {},
+            fr: {}
+        };
+        
+        // Make translations accessible globally
+        window.allTranslations = {
+            en: {
+                // Header
+                title: "SDK Documentation",
+                subtitle: "Complete guide to integrating the SMATCH Licensing SDK into your application. Secure your software with robust license validation, machine binding, and offline support.",
+                backToDashboard: "Back to Dashboard",
+                backToTop: "Back to top",
+                
+                // Sidebar sections
+                gettingStarted: "Getting Started",
+                coreFeatures: "Core Features",
+                advanced: "Advanced",
+                
+                // Nav links
+                introduction: "Introduction",
+                installation: "Installation",
+                quickStart: "Quick Start",
+                apiKey: "API Key Auth",
+                validation: "License Validation",
+                activation: "Activation",
+                offline: "Offline Licensing",
+                machineBinding: "Machine Binding",
+                hmacChecksum: "HMAC Checksum",
+                signatures: "NaCl Signatures",
+                errorHandling: "Error Handling",
+                apiReference: "API Reference",
+                
+                // Features
+                secureValidation: "Secure Validation",
+                secureValidationDesc: "Validate licenses online with API key authentication and rate limiting.",
+                offlineSupport: "Offline Support",
+                offlineSupportDesc: "Validate licenses without internet using HMAC checksums and signatures.",
+                machineBindingTitle: "Machine Binding",
+                machineBindingDesc: "Restrict licenses to specific machines using MAC address binding.",
+                cryptoSecurity: "Cryptographic Security",
+                cryptoSecurityDesc: "HMAC checksums and NaCl signatures ensure license integrity.",
+                
+                // Installation
+                installTitle: "Installation",
+                installDesc: "Install the SDK using pip:",
+                installAlt: "Or install from source:",
+                requirements: "Requirements:",
+                reqText: "Python 3.8+ and the requests library. The pynacl library is required for signature verification.",
+                
+                // Quick Start
+                quickStartTitle: "Quick Start",
+                quickStartDesc: "Get started with just a few lines of code:",
+                
+                // API Key
+                apiKeyTitle: "API Key Authentication",
+                apiKeyDesc: "All requests to the licensing API require an API key. You can create API keys from the dashboard.",
+                apiKeySecurity: "Security:",
+                apiKeySecurityText: "Never expose your API secret key in client-side code. Only the public API key should be used in your applications.",
+                clientConfig: "Client Configuration",
+                param: "Parameter",
+                type: "Type",
+                required: "Required",
+                desc: "Description",
+                serverUrl: "server_url",
+                serverUrlDesc: "Your licensing server URL",
+                apiKeyParam: "api_key",
+                apiKeyParamDesc: "Public API key from dashboard",
+                secretKey: "secret_key",
+                secretKeyDesc: "Secret key for offline HMAC validation",
+                publicKey: "public_key",
+                publicKeyDesc: "Public key for cryptographic signatures",
+                
+                // Validation
+                validationTitle: "License Validation",
+                validationDesc: "Validate licenses online against the licensing server. This is the most secure method as it checks the server's database directly.",
+                onlineValidation: "Online Validation",
+                validationResponse: "Validation Response",
+                
+                // Activation
+                activationTitle: "License Activation",
+                activationDesc: "Activate a license to bind it to a machine. This is required before the license can be used.",
+                activationNote: "When a license is activated, it's automatically bound to the current machine's MAC address. The max machines setting controls how many machines can bind to the license.",
+                activationFlow: "Activation Flow",
+                yourApp: "Your App",
+                yourAppDesc: "Calls validate()",
+                sdk: "SDK",
+                sdkDesc: "Sends API request",
+                server: "Server",
+                serverDesc: "Checks database",
+                response: "Response",
+                responseDesc: "Valid/Invalid",
+                step1: "Your App Calls activate()",
+                step1Desc: "SDK sends the license key with the machine's MAC address",
+                step2: "Server Validates",
+                step2Desc: "Checks if license exists, is not revoked, and has available machine slots",
+                step3: "Machine Binding",
+                step3Desc: "MAC address is added to the license's allowed machines",
+                step4: "Activation Complete",
+                step4Desc: "License state changes to active",
+                
+                // Offline
+                offlineTitle: "Offline Licensing",
+                offlineDesc: "Validate licenses without an internet connection. This is essential for desktop applications that need to work offline.",
+                offlineSecurity: "Security Note:",
+                offlineSecurityText: "Offline validation relies on cryptographic checksums and signatures. Ensure your secret key remains secure.",
+                saveOffline: "Saving License for Offline Use",
+                verifyOffline: "Verifying Offline License",
+                offlineProcess: "Offline Validation Process",
+                loadFile: "Load File",
+                loadFileDesc: "Read license.dat",
+                hmacCheck: "HMAC Check",
+                hmacCheckDesc: "Verify checksum",
+                signature: "Signature",
+                signatureDesc: "Verify NaCl sig",
+                expiry: "Expiry",
+                expiryDesc: "Check expiration",
+                
+                // Machine Binding
+                machineTitle: "Machine Binding",
+                machineDesc: "Restrict licenses to specific machines using MAC address binding. This prevents license sharing.",
+                machineHow: "How It Works",
+                machinePoint1: "Each machine has a unique MAC address",
+                machinePoint2: "When activating, the MAC is bound to the license",
+                machinePoint3: "License validates by checking the machine's MAC against allowed list",
+                machinePoint4: "Max machines setting controls how many devices can use the license",
+                machineNote: "Note:",
+                machineNoteText: "You can set max machines when creating a license or update it later from the dashboard. Use -1 for unlimited machines.",
+                customMac: "Custom MAC Address",
+                
+                // HMAC
+                hmacTitle: "HMAC Checksum",
+                hmacDesc: "HMAC (Hash-based Message Authentication Code) ensures license data integrity. The secret key is used to generate a checksum that can't be forged without the key.",
+                hmacWarning: "Warning:",
+                hmacWarningText: "Anyone with the secret key can generate valid checksums. Keep your secret key secure and never distribute it in client-side code for production.",
+                
+                // Signatures
+                sigTitle: "NaCl Signatures",
+                sigDesc: "For enhanced security, use Ed25519 digital signatures from the NaCl library. This provides asymmetric cryptography where only the server can sign licenses.",
+                sigRec: "Recommendation:",
+                sigRecText: "Always enable signature verification in production. The public key can be safely distributed in your application.",
+                
+                // Error Handling
+                errorTitle: "Error Handling",
+                errorDesc: "The SDK provides specific exception classes for different error scenarios:",
+                
+                // API Reference
+                apiRefTitle: "API Reference",
+                method: "Method",
+                parameters: "Parameters",
+                returns: "Returns",
+                description: "Description",
+                endpoints: "Server Endpoints",
+                endpoint: "Endpoint",
+                
+                // Table values
+                string: "string",
+                bool: "bool",
+                datetime: "datetime",
+                yes: "Yes",
+                no: "No",
+                
+                // UI
+                copy: "Copy",
+                copied: "Copied!"
+            },
+            fr: {
+                // Header
+                title: "Documentation SDK",
+                subtitle: "Guide complet pour intégrer le SDK de licence SMATCH dans votre application. Sécurisez votre logiciel avec une validation robuste des licences, la liaison de machine et le support hors ligne.",
+                backToDashboard: "Retour au Tableau de Bord",
+                backToTop: "Retour en haut",
+                
+                // Sidebar sections
+                gettingStarted: "Pour Commencer",
+                coreFeatures: "Fonctionnalités Principales",
+                advanced: "Avancé",
+                
+                // Nav links
+                introduction: "Introduction",
+                installation: "Installation",
+                quickStart: "Démarrage Rapide",
+                apiKey: "Auth API Key",
+                validation: "Validation de Licence",
+                activation: "Activation",
+                offline: "Licence Hors Ligne",
+                machineBinding: "Liaison Machine",
+                hmacChecksum: "Somme de Contrôle HMAC",
+                signatures: "Signatures NaCl",
+                errorHandling: "Gestion des Erreurs",
+                apiReference: "Référence API",
+                
+                // Features
+                secureValidation: "Validation Sécurisée",
+                secureValidationDesc: "Validez les licences en ligne avec l'authentification par clé API et la limitation de débit.",
+                offlineSupport: "Support Hors Ligne",
+                offlineSupportDesc: "Validez les licences sans internet en utilisant les sommes de contrôle HMAC et les signatures.",
+                machineBindingTitle: "Liaison Machine",
+                machineBindingDesc: "Restreignez les licences à des machines spécifiques en utilisant la liaison d'adresse MAC.",
+                cryptoSecurity: "Sécurité Cryptographique",
+                cryptoSecurityDesc: "Les sommes de contrôle HMAC et les signatures NaCl garantissent l'intégrité de la licence.",
+                
+                // Installation
+                installTitle: "Installation",
+                installDesc: "Installez le SDK en utilisant pip:",
+                installAlt: "Ou installez depuis la source:",
+                requirements: "Exigences:",
+                reqText: "Python 3.8+ et la bibliothèque requests. La bibliothèque pynacl est requise pour la vérification des signatures.",
+                
+                // Quick Start
+                quickStartTitle: "Démarrage Rapide",
+                quickStartDesc: "Commencez avec seulement quelques lignes de code:",
+                
+                // API Key
+                apiKeyTitle: "Authentification par Clé API",
+                apiKeyDesc: "Toutes les requêtes vers l'API de licence nécessitent une clé API. Vous pouvez créer des clés API depuis le tableau de bord.",
+                apiKeySecurity: "Sécurité:",
+                apiKeySecurityText: "Ne exposez jamais votre clé secrète API dans le code côté client. Seule la clé API publique doit être utilisée dans vos applications.",
+                clientConfig: "Configuration du Client",
+                param: "Paramètre",
+                type: "Type",
+                required: "Requis",
+                desc: "Description",
+                serverUrl: "server_url",
+                serverUrlDesc: "URL de votre serveur de licences",
+                apiKeyParam: "api_key",
+                apiKeyParamDesc: "Clé API publique du tableau de bord",
+                secretKey: "secret_key",
+                secretKeyDesc: "Clé secrète pour la validation HMAC hors ligne",
+                publicKey: "public_key",
+                publicKeyDesc: "Clé publique pour les signatures cryptographiques",
+                
+                // Validation
+                validationTitle: "Validation de Licence",
+                validationDesc: "Validez les licences en ligne auprès du serveur de licences. C'est la méthode la plus sécurisée car elle vérifie directement la base de données du serveur.",
+                onlineValidation: "Validation en Ligne",
+                validationResponse: "Réponse de Validation",
+                
+                // Activation
+                activationTitle: "Activation de Licence",
+                activationDesc: "Activez une licence pour la lier à une machine. Ceci est requis avant que la licence ne puisse être utilisée.",
+                activationNote: "Lorsqu'une licence est activée, elle est automatiquement liée à l'adresse MAC de la machine actuelle. Le paramètre max machines contrôle combien de machines peuvent être liées à la licence.",
+                activationFlow: "Flux d'Activation",
+                yourApp: "Votre Application",
+                yourAppDesc: "Appelle validate()",
+                sdk: "SDK",
+                sdkDesc: "Envoie la requête API",
+                server: "Serveur",
+                serverDesc: "Vérifie la base de données",
+                response: "Réponse",
+                responseDesc: "Valide/Invalide",
+                step1: "Votre Application Appelle activate()",
+                step1Desc: "Le SDK envoie la clé de licence avec l'adresse MAC de la machine",
+                step2: "Serveur Valide",
+                step2Desc: "Vérifie si la licence existe, n'est pas révoquée, et a des slots machine disponibles",
+                step3: "Liaison Machine",
+                step3Desc: "L'adresse MAC est ajoutée aux machines autorisées de la licence",
+                step4: "Activation Terminée",
+                step4Desc: "L'état de la licence passe à actif",
+                
+                // Offline
+                offlineTitle: "Licence Hors Ligne",
+                offlineDesc: "Validez les licences sans connexion internet. Ceci est essentiel pour les applications de bureau qui doivent fonctionner hors ligne.",
+                offlineSecurity: "Note de Sécurité:",
+                offlineSecurityText: "La validation hors ligne repose sur les sommes de contrôle cryptographiques et les signatures. Assurez-vous que votre clé secrète reste sécurisée.",
+                saveOffline: "Sauvegarder la Licence pour Utilisation Hors Ligne",
+                verifyOffline: "Vérifier la Licence Hors Ligne",
+                offlineProcess: "Processus de Validation Hors Ligne",
+                loadFile: "Charger Fichier",
+                loadFileDesc: "Lire license.dat",
+                hmacCheck: "Vérification HMAC",
+                hmacCheckDesc: "Vérifier la somme de contrôle",
+                signature: "Signature",
+                signatureDesc: "Vérifier signature NaCl",
+                expiry: "Expiration",
+                expiryDesc: "Vérifier l'expiration",
+                
+                // Machine Binding
+                machineTitle: "Liaison Machine",
+                machineDesc: "Restreignez les licences à des machines spécifiques en utilisant la liaison d'adresse MAC. Cela empêche le partage de licences.",
+                machineHow: "Comment Ça Marche",
+                machinePoint1: "Chaque machine a une adresse MAC unique",
+                machinePoint2: "Lors de l'activation, le MAC est lié à la licence",
+                machinePoint3: "La licence valide en vérifiant le MAC de la machine contre la liste autorisée",
+                machinePoint4: "Le paramètre max machines contrôle combien d'appareils peuvent utiliser la licence",
+                machineNote: "Note:",
+                machineNoteText: "Vous pouvez définir max machines lors de la création d'une licence ou la mettre à jour plus tard depuis le tableau de bord. Utilisez -1 pour les machines illimitées.",
+                customMac: "Adresse MAC Personnalisée",
+                
+                // HMAC
+                hmacTitle: "Somme de Contrôle HMAC",
+                hmacDesc: "HMAC (Hash-based Message Authentication Code) assure l'intégrité des données de licence. La clé secrète est utilisée pour générer une somme de contrôle qui ne peut être forgée sans la clé.",
+                hmacWarning: "Avertissement:",
+                hmacWarningText: "Toute personne ayant la clé secrète peut générer des sommes de contrôle valides. Gardez votre clé secrète sécurisée et ne la distribuez jamais dans le code côté client en production.",
+                
+                // Signatures
+                sigTitle: "Signatures NaCl",
+                sigDesc: "Pour une sécurité renforcée, utilisez les signatures numériques Ed25519 de la bibliothèque NaCl. Cela fournit une cryptographie asymétrique où seul le serveur peut signer les licences.",
+                sigRec: "Recommandation:",
+                sigRecText: "Toujours activer la vérification des signatures en production. La clé publique peut être safely distribuée dans votre application.",
+                
+                // Error Handling
+                errorTitle: "Gestion des Erreurs",
+                errorDesc: "Le SDK fournit des classes d'exception spécifiques pour différents scénarios d'erreur:",
+                
+                // API Reference
+                apiRefTitle: "Référence API",
+                method: "Méthode",
+                parameters: "Paramètres",
+                returns: "Retourne",
+                description: "Description",
+                endpoints: "Points de Terminaison du Serveur",
+                endpoint: "Point de Terminaison",
+                
+                // Table values
+                string: "chaîne",
+                bool: "booléen",
+                datetime: "datetime",
+                yes: "Oui",
+                no: "Non",
+                
+                // UI
+                copy: "Copier",
+                copied: "Copié!"
+            }
+        };
+        
+        function setLanguage(lang) {
+            const t = allTranslations[lang];
+            
+            // Update buttons
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+            
+            // Save preference
+            localStorage.setItem('docs-lang', lang);
+            
+            // Update copy buttons
+            document.querySelectorAll('.code-copy').forEach(btn => {
+                btn.textContent = t.copy;
+            });
+            
+            // Update title and subtitle
+            document.querySelector('.content-header h1').textContent = t.title;
+            document.querySelector('.content-header p').textContent = t.subtitle;
+            
+            // Update back to top
+            document.querySelector('.back-link').innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                ${t.backToTop}
+            `;
+            
+            // Update sidebar section titles
+            const sidebarSections = document.querySelectorAll('.sidebar-section');
+            if (sidebarSections[0]) sidebarSections[0].querySelector('.sidebar-title').textContent = t.gettingStarted;
+            if (sidebarSections[1]) sidebarSections[1].querySelector('.sidebar-title').textContent = t.coreFeatures;
+            if (sidebarSections[2]) sidebarSections[2].querySelector('.sidebar-title').textContent = t.advanced;
+            
+            // Update sidebar nav links
+            const navMap = {
+                '#introduction': t.introduction,
+                '#installation': t.installation,
+                '#quickstart': t.quickStart,
+                '#api-key': t.apiKey,
+                '#validation': t.validation,
+                '#activation': t.activation,
+                '#offline': t.offline,
+                '#machine-binding': t.machineBinding,
+                '#hmac-checksum': t.hmacChecksum,
+                '#signatures': t.signatures,
+                '#error-handling': t.errorHandling,
+                '#api-reference': t.apiReference
+            };
+            document.querySelectorAll('.sidebar-nav a').forEach(link => {
+                if (navMap[link.getAttribute('href')]) {
+                    link.textContent = navMap[link.getAttribute('href')];
+                }
+            });
+            
+            // Update back to dashboard button
+            document.querySelector('.header-right .btn').innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M3 8h10M3 8l4-4M3 8l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                ${t.backToDashboard}
+            `;
+            
+            // Update header nav
+            document.querySelector('.header-nav').innerHTML = `
+                <a href="#introduction">${t.introduction}</a>
+                <a href="#installation">${t.installation}</a>
+                <a href="#quickstart">${t.quickStart}</a>
+                <a href="#api-key" class="active">${lang === 'fr' ? 'Référence SDK' : 'SDK Reference'}</a>
+            `;
+            
+            // Update section headings
+            const sectionHeadings = {
+                'installation': t.installTitle,
+                'quickstart': t.quickStartTitle,
+                'api-key': t.apiKeyTitle,
+                'validation': t.validationTitle,
+                'activation': t.activationTitle,
+                'offline': t.offlineTitle,
+                'machine-binding': t.machineTitle,
+                'hmac-checksum': t.hmacTitle,
+                'signatures': t.sigTitle,
+                'error-handling': t.errorTitle,
+                'api-reference': t.apiRefTitle
+            };
+            document.querySelectorAll('.section h2').forEach(h2 => {
+                const id = h2.closest('.section').id;
+                if (sectionHeadings[id]) {
+                    h2.innerHTML = `${sectionHeadings[id]} <a href="#${id}" class="anchor">#</a>`;
+                }
+            });
+            
+            // Update all paragraphs with translations
+            const paraMap = {
+                'api-key': t.apiKeyDesc,
+                'validation': t.validationDesc,
+                'activation': t.activationDesc,
+                'machine-binding': t.machineDesc,
+                'hmac-checksum': t.hmacDesc,
+                'signatures': t.sigDesc,
+                'error-handling': t.errorDesc
+            };
+            document.querySelectorAll('.section p').forEach((p, i) => {
+                const section = p.closest('.section');
+                if (section && paraMap[section.id]) {
+                    const key = section.id;
+                    if (key === 'api-key' && i === 0) p.textContent = t.apiKeyDesc;
+                }
+            });
+            
+            // Update feature cards
+            const featureTitles = document.querySelectorAll('.feature-card h3');
+            if (featureTitles[0]) featureTitles[0].textContent = t.secureValidation;
+            if (featureTitles[1]) featureTitles[1].textContent = t.offlineSupport;
+            if (featureTitles[2]) featureTitles[2].textContent = t.machineBindingTitle;
+            if (featureTitles[3]) featureTitles[3].textContent = t.cryptoSecurity;
+            
+            const featureDescs = document.querySelectorAll('.feature-card p');
+            if (featureDescs[0]) featureDescs[0].textContent = t.secureValidationDesc;
+            if (featureDescs[1]) featureDescs[1].textContent = t.offlineSupportDesc;
+            if (featureDescs[2]) featureDescs[2].textContent = t.machineBindingDesc;
+            if (featureDescs[3]) featureDescs[3].textContent = t.cryptoSecurityDesc;
+            
+            // Update info boxes
+            document.querySelectorAll('.info-box p').forEach(p => {
+                if (p.innerHTML.includes('Requirements') || p.innerHTML.includes('Python')) {
+                    p.innerHTML = `<strong>${t.requirements}</strong> ${t.reqText}`;
+                }
+                if (p.innerHTML.includes('Security') || p.innerHTML.includes('secret key')) {
+                    const strong = p.querySelector('strong');
+                    if (strong) strong.textContent = t.apiKeySecurity;
+                }
+                if (p.innerHTML.includes('Offline validation') || p.innerHTML.includes('cryptographic')) {
+                    const strong = p.querySelector('strong');
+                    if (strong) strong.textContent = t.offlineSecurity;
+                }
+            });
+            
+            // Update h3 headings
+            const h3Map = {
+                'clientConfig': t.clientConfig,
+                'onlineValidation': t.onlineValidation,
+                'validationResponse': t.validationResponse,
+                'activationFlow': t.activationFlow,
+                'saveOffline': t.saveOffline,
+                'verifyOffline': t.verifyOffline,
+                'offlineProcess': t.offlineProcess,
+                'machineHow': t.machineHow,
+                'customMac': t.customMac
+            };
+            document.querySelectorAll('.section h3').forEach(h3 => {
+                const text = h3.textContent.trim();
+                for (const [key, val] of Object.entries(h3Map)) {
+                    if (text.toLowerCase().includes(key.toLowerCase()) || 
+                        text.toLowerCase().includes('client configuration') ||
+                        text.toLowerCase().includes('online validation') ||
+                        text.toLowerCase().includes('validation response') ||
+                        text.toLowerCase().includes('activation flow') ||
+                        text.toLowerCase().includes('saving license') ||
+                        text.toLowerCase().includes('verifying offline') ||
+                        text.toLowerCase().includes('offline validation') ||
+                        text.toLowerCase().includes('how it works') ||
+                        text.toLowerCase().includes('custom mac')) {
+                        h3.textContent = val;
+                        break;
+                    }
+                }
+            });
+        }
+        
+        // Load saved language preference
+        const savedLang = localStorage.getItem('docs-lang') || 'en';
+        setLanguage(savedLang);
+</body>
+</html>

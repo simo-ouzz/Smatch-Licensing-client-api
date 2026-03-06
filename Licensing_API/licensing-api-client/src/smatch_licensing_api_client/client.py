@@ -2,7 +2,10 @@
 Main client for the licensing API.
 """
 import os
+import uuid
 import requests
+import subprocess
+import re
 from typing import Optional, Union
 from urllib.parse import urljoin
 
@@ -18,6 +21,19 @@ from smatch_licensing_api_client.errors import (
     NetworkError,
     AuthenticationError,
 )
+
+
+def get_mac_address() -> str:
+    """
+    Get the machine's MAC address automatically.
+    
+    Returns:
+        MAC address in format XX:XX:XX:XX:XX:XX
+    """
+    node = uuid.getnode()
+    mac_hex = format(node, "012x")
+    mac = ":".join(re.findall("..", mac_hex))
+    return mac
 
 
 class LicenseClient:
@@ -48,6 +64,7 @@ class LicenseClient:
         server_url: str,
         api_key: Optional[str] = None,
         public_key: Optional[str] = None,
+        secret_key: Optional[str] = None,
         timeout: int = DEFAULT_TIMEOUT,
         verify_ssl: bool = True
     ):
@@ -59,15 +76,21 @@ class LicenseClient:
             api_key: API key for authentication (can also set via LICENSING_API_KEY env var)
             public_key: Public key for offline signature verification (hex format).
                        Get this from your Cryptographyyy.py: PUBLIC_KEY_HEX
+            secret_key: Secret key for HMAC checksum (forgery-proof offline licenses).
+                       Get this from server via /licenses/secret-key endpoint.
             timeout: Request timeout in seconds
             verify_ssl: Whether to verify SSL certificates
         """
         self.server_url = server_url.rstrip("/")
         self.api_key = api_key or os.environ.get("LICENSING_API_KEY")
         self.public_key = public_key
+        self.secret_key = secret_key or os.environ.get("LICENSING_SECRET_KEY")
         self.timeout = timeout
         self.verify_ssl = verify_ssl
-        self._offline_manager = OfflineLicenseManager(public_key=public_key)
+        self._offline_manager = OfflineLicenseManager(
+            public_key=public_key,
+            secret_key=secret_key
+        )
         
         if not self.api_key:
             raise AuthenticationError(
@@ -186,12 +209,13 @@ class LicenseClient:
                 reason="server_error"
             )
     
-    def activate(self, key: str) -> bool:
+    def activate(self, key: str, mac_address: Optional[str] = None) -> bool:
         """
         Activate a license key.
         
         Args:
             key: The license key to activate
+            mac_address: MAC address to bind (auto-extracted if not provided)
             
         Returns:
             True if activation successful, False otherwise
@@ -205,13 +229,17 @@ class LicenseClient:
         
         key = key.strip()
         
+        if not mac_address:
+            mac_address = get_mac_address()
+        
         try:
             response = self._make_request(
                 method="POST",
-                endpoint=f"/licenses/{key}/activate"
+                endpoint=f"/licenses/{key}/activate",
+                data={"mac_address": mac_address}
             )
             return response.get("status") in ["activated", "already_active"]
-        except (LicenseNotFoundError, AuthenticationError, NetworkError, LicenseServerError):
+        except (LicenseNotFoundError, AuthenticationError, NetworkError, LicenseServerError) as e:
             return False
     
     def deactivate(self, key: str) -> bool:
@@ -288,11 +316,20 @@ class LicenseClient:
             return False
         
         try:
+            # Handle expiry_date - convert string to datetime if needed
+            expires = details.get("expiry_date")
+            if isinstance(expires, str):
+                from datetime import datetime
+                try:
+                    expires = datetime.fromisoformat(expires.replace("Z", "+00:00"))
+                except ValueError:
+                    expires = None
+            
             license_key = LicenseKey(
                 license_key=details.get("license_key", key),
                 license_id=details.get("license_id_hex", ""),
                 signature=details.get("signature_hex", ""),
-                expires=details.get("expiry_date"),
+                expires=expires,
                 state=details.get("state", "active"),
                 is_revoked=details.get("is_revoked", False)
             )
@@ -302,13 +339,14 @@ class LicenseClient:
         except Exception:
             return False
     
-    def verify_offline(self, filepath: str, check_signature: bool = True) -> bool:
+    def verify_offline(self, filepath: str, check_signature: bool = True, log_to_server: bool = True) -> bool:
         """
         Verify a license from a saved file (offline).
         
         Args:
             filepath: Path to the saved license file
             check_signature: If True, verify cryptographic signature (requires public_key)
+            log_to_server: If True, log the offline check to the server for audit
             
         Returns:
             True if license is valid, False otherwise
@@ -323,6 +361,22 @@ class LicenseClient:
             return False
         
         is_valid, reason = self._offline_manager.verify(license_key, check_signature=check_signature)
+        
+        if log_to_server and self.api_key:
+            try:
+                machine_mac = get_mac_address()
+                self._make_request(
+                    method="POST",
+                    endpoint="/licenses/offline-check",
+                    data={
+                        "license_key": license_key.license_key if license_key else None,
+                        "is_valid": is_valid,
+                        "machine_id": machine_mac,
+                    }
+                )
+            except Exception:
+                pass
+        
         return is_valid
     
     def load_license(self, filepath: str) -> Optional[LicenseKey]:
@@ -336,6 +390,26 @@ class LicenseClient:
             LicenseKey object if loaded successfully, None otherwise
         """
         return self._offline_manager.load(filepath)
+    
+    def fetch_secret_key(self) -> Optional[str]:
+        """
+        Fetch the secret key from the server for offline license HMAC.
+        
+        Returns:
+            Secret key string if successful, None otherwise
+        """
+        if not self.secret_key:
+            try:
+                response = self._make_request(
+                    method="GET",
+                    endpoint="/licenses/secret-key"
+                )
+                self.secret_key = response.get("secret_key")
+                self._offline_manager.secret_key = self.secret_key
+                return self.secret_key
+            except Exception:
+                return None
+        return self.secret_key
 
 
 class Helpers:

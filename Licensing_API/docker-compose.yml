@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: licensing_postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-licenses_db}
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "9439:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-admin}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - licensing_network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: licensing_api_1
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-licenses_db}
+      DB_USER: ${DB_USER:-admin}
+      DB_PASSWORD: ${DB_PASSWORD}
+      PRIVATE_KEY_HEX: ${PRIVATE_KEY_HEX}
+      PUBLIC_KEY_HEX: ${PUBLIC_KEY_HEX}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_REFRESH_SECRET_KEY: ${JWT_REFRESH_SECRET_KEY}
+      OFFLINE_SECRET_KEY: ${OFFLINE_SECRET_KEY}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - licensing_network
+
+  api_2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: licensing_api_2
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-licenses_db}
+      DB_USER: ${DB_USER:-admin}
+      DB_PASSWORD: ${DB_PASSWORD}
+      PRIVATE_KEY_HEX: ${PRIVATE_KEY_HEX}
+      PUBLIC_KEY_HEX: ${PUBLIC_KEY_HEX}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_REFRESH_SECRET_KEY: ${JWT_REFRESH_SECRET_KEY}
+      OFFLINE_SECRET_KEY: ${OFFLINE_SECRET_KEY}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - licensing_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: licensing_nginx
+    ports:
+      - "8822:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - api_2
+    restart: unless-stopped
+    networks:
+      - licensing_network
+
+volumes:
+  postgres_data:
+
+networks:
+  licensing_network:
+    driver: bridge

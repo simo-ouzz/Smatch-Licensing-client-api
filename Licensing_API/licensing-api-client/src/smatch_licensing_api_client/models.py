@@ -7,6 +7,8 @@ import hmac
 from datetime import datetime, timedelta
 from typing import Optional
 
+from smatch_licensing_api_client.errors import LicenseTamperedError
+
 
 class LicenseResponse:
     """
@@ -182,19 +184,22 @@ class OfflineLicenseManager:
     """
     Manages offline license file verification.
     
-    Provides cryptographic signature verification to prevent tampering.
-    Requires a public key to verify the license file authenticity.
+    Provides cryptographic signature verification and HMAC checksum to prevent tampering.
+    Requires a public key to verify the license file authenticity and secret key for HMAC.
     """
     
-    def __init__(self, public_key: Optional[str] = None):
+    def __init__(self, public_key: Optional[str] = None, secret_key: Optional[str] = None):
         """
         Initialize the offline license manager.
         
         Args:
             public_key: Public key for signature verification (hex format).
                        Get this from your Cryptographyyy.py: PUBLIC_KEY_HEX
+            secret_key: Secret key for HMAC checksum verification.
+                       Get this from server via /licenses/secret-key endpoint.
         """
         self.public_key = public_key
+        self.secret_key = secret_key
     
     def verify(self, license_key: LicenseKey, check_signature: bool = True) -> tuple[bool, str]:
         """
@@ -266,30 +271,110 @@ class OfflineLicenseManager:
         """
         return self._verify_signature(license_key)
     
-    def save(self, license_key: LicenseKey, filepath: str) -> None:
+    def _calculate_checksum(self, data: dict, secret_key: str) -> str:
         """
-        Save license to file.
+        Calculate HMAC-SHA256 checksum of license data.
+        
+        Args:
+            data: License data dictionary
+            secret_key: Secret key for HMAC
+            
+        Returns:
+            Hex-encoded HMAC-SHA256 checksum
+        """
+        import hmac
+        import hashlib
+        
+        # Create a copy without the checksum field
+        data_to_sign = {k: v for k, v in data.items() if k != "checksum"}
+        
+        # Sort keys for consistent ordering
+        import json
+        message = json.dumps(data_to_sign, sort_keys=True, default=str)
+        
+        # Calculate HMAC
+        signature = hmac.new(
+            secret_key.encode(),
+            message.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        
+        return signature
+    
+    def _verify_checksum(self, data: dict, secret_key: str) -> bool:
+        """
+        Verify HMAC-SHA256 checksum of license data.
+        
+        Args:
+            data: License data dictionary with checksum
+            secret_key: Secret key for HMAC
+            
+        Returns:
+            True if checksum is valid
+        """
+        if not secret_key or "checksum" not in data:
+            return True  # No checksum to verify
+        
+        expected_checksum = data.get("checksum", "")
+        actual_checksum = self._calculate_checksum(data, secret_key)
+        
+        return hmac.compare_digest(expected_checksum, actual_checksum)
+    
+    def save(self, license_key: LicenseKey, filepath: str, secret_key: Optional[str] = None) -> None:
+        """
+        Save license to file with optional HMAC checksum.
         
         Args:
             license_key: The license to save
             filepath: Path to save to
+            secret_key: Secret key for HMAC checksum (uses instance secret_key if not provided)
         """
+        secret = secret_key or self.secret_key
+        
+        # Get the data from license key
+        data = {
+            "license_key": license_key.license_key,
+            "license_id": license_key.license_id,
+            "signature": license_key.signature,
+            "expires": license_key.expires.isoformat() if license_key.expires else None,
+            "state": license_key.state,
+            "is_revoked": license_key.is_revoked,
+        }
+        
+        # Add checksum if secret key is available
+        if secret:
+            data["checksum"] = self._calculate_checksum(data, secret)
+        
         with open(filepath, "w") as f:
-            f.write(license_key.save_to_string())
+            json.dump(data, f, indent=2)
     
-    def load(self, filepath: str) -> Optional[LicenseKey]:
+    def load(self, filepath: str, secret_key: Optional[str] = None) -> Optional[LicenseKey]:
         """
-        Load license from file.
+        Load license from file and verify checksum.
         
         Args:
             filepath: Path to license file
+            secret_key: Secret key for HMAC verification (uses instance secret_key if not provided)
             
         Returns:
-            LicenseKey if valid, None if invalid
+            LicenseKey if valid, None if invalid or tampered
+            
+        Raises:
+            LicenseTamperedError: If checksum verification fails
         """
+        secret = secret_key or self.secret_key
+        
         try:
             with open(filepath, "r") as f:
-                content = f.read()
-            return LicenseKey.load_from_string(content)
+                data = json.load(f)
+            
+            # Verify checksum if secret key is provided
+            if secret and "checksum" in data:
+                if not self._verify_checksum(data, secret):
+                    raise LicenseTamperedError("License file has been tampered with - checksum mismatch")
+            
+            return LicenseKey.from_dict(data)
         except (FileNotFoundError, json.JSONDecodeError):
             return None
+        except LicenseTamperedError:
+            raise

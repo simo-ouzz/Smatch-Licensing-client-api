@@ -2,9 +2,14 @@ import os
 import base64
 import secrets
 import psycopg2
+from typing import Optional
 from nacl.signing import SigningKey, VerifyKey
 from nacl.exceptions import BadSignatureError
 from datetime import datetime, timedelta, timezone
+
+# Offline license secret key for HMAC checksum
+# In production, generate a random key: secrets.token_hex(32)
+OFFLINE_SECRET_KEY = os.getenv("OFFLINE_SECRET_KEY", "default_dev_secret_key_change_in_production")
 
 
 
@@ -26,7 +31,8 @@ def insert_license(
     product_id,
     license_type,
     period_days,
-    grace_period_days
+    grace_period_days,
+    max_machines = -1
 ):
 
     creation_date = datetime.now(timezone.utc)
@@ -54,12 +60,13 @@ def insert_license(
                     is_revoked,
                     product_id,
                     signature_hex,
-                    license_id_hex
+                    license_id_hex,
+                    max_machines
                 )
                 VALUES (
                     %s, %s, %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s
+                    %s, %s, %s, %s
                 )
             """, (
                 license_key,
@@ -77,7 +84,8 @@ def insert_license(
                 False,
                 product_id,
                 signature_hex,
-                license_id_hex
+                license_id_hex,
+                max_machines
             ))
 # ==========================================================
 # STEP 1: GENERATE KEYPAIR (RUN ONCE, THEN SAVE KEYS)
@@ -283,7 +291,10 @@ def get_license_details(license_key):
                     l.activation_date,
                     l.expiry_date,
                     l.grace_period_in_days,
-                    p.product_id
+                    p.product_id,
+                    l.license_id_hex,
+                    l.signature_hex,
+                    l.max_machines
                 FROM public.licenses l
                 JOIN public.products p 
                     ON l.product_id = p.product_id
@@ -297,6 +308,20 @@ def get_license_details(license_key):
 
     remaining_sec, remaining_days = calculate_remaining(row[9])
 
+    # Get the first bound machine (activation MAC)
+    activation_mac = None
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT mac_address FROM public.license_machines
+                WHERE license_key = %s AND is_active = TRUE
+                ORDER BY bound_at ASC
+                LIMIT 1
+            """, (license_key,))
+            mac_row = cur.fetchone()
+            if mac_row:
+                activation_mac = mac_row[0]
+
     return {
         "license_key": row[0],
         "company_name": row[1],
@@ -307,11 +332,15 @@ def get_license_details(license_key):
         "revoked_reason": row[6],
         "creation_date": row[7],
         "activation_date": row[8],
+        "activation_mac": activation_mac,
         "expiry_date": row[9],
         "remaining_seconds": remaining_sec,
         "remaining_days": remaining_days,
         "grace_period_days": row[10],
-        "product_id": row[11]
+        "product_id": row[11],
+        "license_id_hex": row[12],
+        "signature_hex": row[13],
+        "max_machines": row[14] if row[14] is not None else -1
     }
 
 
@@ -695,6 +724,196 @@ def delete_product(product_id):
     return {"success": True}
 
 # ==========================================================
+# MACHINE BINDING FUNCTIONS
+# ==========================================================
+
+def get_license_product_id(license_key: str) -> Optional[int]:
+    """Get product_id for a license."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT product_id FROM public.licenses
+                WHERE license_key = %s
+            """, (license_key,))
+            row = cur.fetchone()
+            return row[0] if row else None
+
+
+def bind_machine_to_license(license_key: str, mac_address: str, machine_name: str = None) -> dict:
+    """
+    Bind a machine (MAC address) to a license.
+    
+    Returns:
+        dict with success True/False and reason if failed
+    """
+    product_id = get_license_product_id(license_key)
+    if not product_id:
+        return {"success": False, "reason": "license_not_found"}
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            # Check if license exists
+            cur.execute("""
+                SELECT max_machines FROM public.licenses
+                WHERE license_key = %s
+            """, (license_key,))
+            row = cur.fetchone()
+            if not row:
+                return {"success": False, "reason": "license_not_found"}
+            
+            max_machines = row[0]
+            
+            # Check if MAC already bound to another license in same product
+            cur.execute("""
+                SELECT license_key FROM public.license_machines
+                WHERE mac_address = %s AND product_id = %s AND is_active = TRUE
+            """, (mac_address, product_id))
+            existing = cur.fetchone()
+            if existing and existing[0] != license_key:
+                return {"success": False, "reason": "mac_bound_to_other_license", "other_license": existing[0]}
+            
+            # Check if MAC already bound to this license
+            cur.execute("""
+                SELECT id, is_active FROM public.license_machines
+                WHERE license_key = %s AND mac_address = %s
+            """, (license_key, mac_address))
+            existing_bound = cur.fetchone()
+            
+            if existing_bound:
+                # Update last_seen and reactivate if inactive
+                cur.execute("""
+                    UPDATE public.license_machines
+                    SET last_seen_at = NOW(), is_active = TRUE
+                    WHERE id = %s
+                """, (existing_bound[0],))
+                conn.commit()
+                return {"success": True, "action": "reactivated"}
+            
+            # Check max_machines limit (0 or NULL = unlimited)
+            if max_machines is not None and max_machines > 0:
+                cur.execute("""
+                    SELECT COUNT(*) FROM public.license_machines
+                    WHERE license_key = %s AND is_active = TRUE
+                """, (license_key,))
+                current_count = cur.fetchone()[0]
+                
+                if current_count >= max_machines:
+                    return {"success": False, "reason": "max_machines_reached", "max": max_machines}
+            
+            # Bind new machine
+            cur.execute("""
+                INSERT INTO public.license_machines (license_key, product_id, mac_address, machine_name, bound_at, last_seen_at, is_active)
+                VALUES (%s, %s, %s, %s, NOW(), NOW(), TRUE)
+            """, (license_key, product_id, mac_address, machine_name))
+            conn.commit()
+            
+            return {"success": True, "action": "bound"}
+
+
+def unbind_machine_from_license(license_key: str, mac_address: str) -> bool:
+    """Unbind a machine from a license."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE public.license_machines
+                SET is_active = FALSE
+                WHERE license_key = %s AND mac_address = %s
+                RETURNING id
+            """, (license_key, mac_address))
+            result = cur.fetchone()
+            conn.commit()
+            return result is not None
+
+
+def reset_all_machines(license_key: str) -> bool:
+    """Unbind all machines from a license."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE public.license_machines
+                SET is_active = FALSE
+                WHERE license_key = %s
+            """, (license_key,))
+            conn.commit()
+            return True
+
+
+def list_license_machines(license_key: str) -> list:
+    """List all machines bound to a license."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, mac_address, machine_name, bound_at, last_seen_at, is_active
+                FROM public.license_machines
+                WHERE license_key = %s
+                ORDER BY bound_at DESC
+            """, (license_key,))
+            rows = cur.fetchall()
+            
+            result = []
+            for row in rows:
+                result.append({
+                    "id": row[0],
+                    "mac_address": row[1],
+                    "machine_name": row[2],
+                    "bound_at": row[3].isoformat() if row[3] else None,
+                    "last_seen_at": row[4].isoformat() if row[4] else None,
+                    "is_active": row[5]
+                })
+            return result
+
+
+def update_max_machines(license_key: str, max_machines: int) -> bool:
+    """
+    Update max_machines limit for a license.
+    Use 0 or NULL for unlimited.
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE public.licenses
+                SET max_machines = %s
+                WHERE license_key = %s
+                RETURNING license_key
+            """, (max_machines, license_key))
+            result = cur.fetchone()
+            conn.commit()
+            return result is not None
+
+
+def check_machine_binding(license_key: str, mac_address: str) -> dict:
+    """
+    Check if a machine is bound to a license.
+    
+    Returns:
+        dict with is_bound, is_active
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT is_active FROM public.license_machines
+                WHERE license_key = %s AND mac_address = %s
+            """, (license_key, mac_address))
+            row = cur.fetchone()
+            
+            if not row:
+                return {"is_bound": False, "is_active": False}
+            
+            return {"is_bound": True, "is_active": row[0]}
+
+
+def get_machine_count(license_key: str) -> int:
+    """Get count of active machines bound to a license."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT COUNT(*) FROM public.license_machines
+                WHERE license_key = %s AND is_active = TRUE
+            """, (license_key,))
+            return cur.fetchone()[0]
+
+
+# ==========================================================
 # TEST
 # ==========================================================
 
@@ -717,4 +936,259 @@ if __name__ == "__main__":
     #     data["signature_hex"]
     # )
 
-    #print("Valid:", is_valid)q
+    #print("Valid:", is_valid)
+
+
+# ==========================================================
+# AUDIT LOG FUNCTIONS
+# ==========================================================
+
+def log_audit_event(
+    license_key: str,
+    event_type: str,
+    mac_address: str = None,
+    ip_address: str = None,
+    user_agent: str = None,
+    success: bool = True,
+    details: dict = None,
+    is_offline: bool = False
+):
+    """
+    Log a license audit event.
+    
+    Args:
+        license_key: The license key
+        event_type: Type of event (activation, verification, offline_check, suspend, revoke, extend)
+        mac_address: MAC address of the machine
+        ip_address: IP address of the request
+        user_agent: User agent string
+        success: Whether the operation was successful
+        details: Additional details as JSON
+        is_offline: Whether this was an offline operation
+    """
+    import json
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO license_audit_logs 
+                (license_key, event_type, mac_address, ip_address, user_agent, success, details, is_offline)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                license_key,
+                event_type,
+                mac_address,
+                ip_address,
+                user_agent,
+                success,
+                json.dumps(details) if details else None,
+                is_offline
+            ))
+            conn.commit()
+
+
+def get_license_audit_logs(
+    license_key: str,
+    limit: int = 100,
+    offset: int = 0
+) -> list:
+    """
+    Get audit logs for a specific license.
+    
+    Args:
+        license_key: The license key
+        limit: Number of records to return
+        offset: Offset for pagination
+        
+    Returns:
+        List of audit log records
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, license_key, event_type, mac_address, ip_address, 
+                       user_agent, success, details, is_offline, created_at
+                FROM license_audit_logs
+                WHERE license_key = %s
+                ORDER BY created_at DESC
+                LIMIT %s OFFSET %s
+            """, (license_key, limit, offset))
+            
+            rows = cur.fetchall()
+            
+            result = []
+            for row in rows:
+                result.append({
+                    "id": row[0],
+                    "license_key": row[1],
+                    "event_type": row[2],
+                    "mac_address": row[3],
+                    "ip_address": row[4],
+                    "user_agent": row[5],
+                    "success": row[6],
+                    "details": row[7],
+                    "is_offline": row[8],
+                    "created_at": row[9].isoformat() if row[9] else None
+                })
+            
+            return result
+
+
+def get_all_audit_logs(
+    search: str = None,
+    event_type: str = None,
+    license_key: str = None,
+    is_offline: bool = None,
+    from_date: str = None,
+    to_date: str = None,
+    limit: int = 100,
+    offset: int = 0
+) -> list:
+    """
+    Get all audit logs with filters.
+    
+    Args:
+        search: Search in license_key, mac_address, ip_address
+        event_type: Filter by event type
+        license_key: Filter by license key
+        is_offline: Filter by offline status
+        from_date: Filter from date (ISO format)
+        to_date: Filter to date (ISO format)
+        limit: Number of records
+        offset: Offset for pagination
+        
+    Returns:
+        List of audit log records
+    """
+    import json
+    
+    query = """
+        SELECT id, license_key, event_type, mac_address, ip_address, 
+               user_agent, success, details, is_offline, created_at
+        FROM license_audit_logs
+        WHERE 1=1
+    """
+    params = []
+    
+    if search:
+        query += " AND (license_key ILIKE %s OR mac_address ILIKE %s OR ip_address ILIKE %s)"
+        search_pattern = f"%{search}%"
+        params.extend([search_pattern, search_pattern, search_pattern])
+    
+    if event_type:
+        query += " AND event_type = %s"
+        params.append(event_type)
+    
+    if license_key:
+        query += " AND license_key = %s"
+        params.append(license_key)
+    
+    if is_offline is not None:
+        query += " AND is_offline = %s"
+        params.append(is_offline)
+    
+    if from_date:
+        query += " AND created_at >= %s"
+        params.append(from_date)
+    
+    if to_date:
+        query += " AND created_at <= %s"
+        params.append(to_date)
+    
+    query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
+    params.extend([limit, offset])
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            rows = cur.fetchall()
+            
+            result = []
+            for row in rows:
+                result.append({
+                    "id": row[0],
+                    "license_key": row[1],
+                    "event_type": row[2],
+                    "mac_address": row[3],
+                    "ip_address": row[4],
+                    "user_agent": row[5],
+                    "success": row[6],
+                    "details": row[7],
+                    "is_offline": row[8],
+                    "created_at": row[9].isoformat() if row[9] else None
+                })
+            
+            return result
+
+
+def get_audit_stats(license_key: str = None) -> dict:
+    """
+    Get audit statistics.
+    
+    Args:
+        license_key: Optional license key to filter by
+        
+    Returns:
+        Dictionary with statistics
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            # Total count
+            if license_key:
+                cur.execute("SELECT COUNT(*) FROM license_audit_logs WHERE license_key = %s", (license_key,))
+            else:
+                cur.execute("SELECT COUNT(*) FROM license_audit_logs")
+            total = cur.fetchone()[0]
+            
+            # By event type
+            if license_key:
+                cur.execute("""
+                    SELECT event_type, COUNT(*) 
+                    FROM license_audit_logs 
+                    WHERE license_key = %s
+                    GROUP BY event_type
+                """, (license_key,))
+            else:
+                cur.execute("""
+                    SELECT event_type, COUNT(*) 
+                    FROM license_audit_logs 
+                    GROUP BY event_type
+                """)
+            by_event = {row[0]: row[1] for row in cur.fetchall()}
+            
+            # Offline vs Online
+            if license_key:
+                cur.execute("""
+                    SELECT is_offline, COUNT(*) 
+                    FROM license_audit_logs 
+                    WHERE license_key = %s
+                    GROUP BY is_offline
+                """, (license_key,))
+            else:
+                cur.execute("""
+                    SELECT is_offline, COUNT(*) 
+                    FROM license_audit_logs 
+                    GROUP BY is_offline
+                """)
+            by_online = {row[0]: row[1] for row in cur.fetchall()}
+            
+            # Recent activity (last 24 hours)
+            if license_key:
+                cur.execute("""
+                    SELECT COUNT(*) FROM license_audit_logs 
+                    WHERE license_key = %s 
+                    AND created_at >= NOW() - INTERVAL '24 hours'
+                """, (license_key,))
+            else:
+                cur.execute("""
+                    SELECT COUNT(*) FROM license_audit_logs 
+                    WHERE created_at >= NOW() - INTERVAL '24 hours'
+                """)
+            last_24h = cur.fetchone()[0]
+            
+            return {
+                "total": total,
+                "by_event_type": by_event,
+                "offline_vs_online": by_online,
+                "last_24h": last_24h
+            }
