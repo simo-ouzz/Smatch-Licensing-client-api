@@ -4,10 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from licensing_api.core.security import (
     require_admin,
+    require_admin_or_api_key,
     rate_limiter_validate_license,
 )
 from licensing_api.models.license_models import (
     LicenseActivateResponse,
+    LicenseActivateRequest,
     LicenseBaseInfo,
     LicenseCreateRequest,
     LicenseCreateResponse,
@@ -20,6 +22,10 @@ from licensing_api.models.license_models import (
     LicenseTypeUpdateRequest,
     LicenseValidationRequest,
     LicenseValidationResponse,
+    MachineBindRequest,
+    MachineInfo,
+    MachineBindResponse,
+    MaxMachinesUpdateRequest,
 )
 from licensing_api.services.license_service import (
     DatabaseError,
@@ -35,6 +41,15 @@ from licensing_api.services.license_service import (
     update_license_type_service,
     validate_license_service,
     activate_license_service,
+    bind_machine_service,
+    unbind_machine_service,
+    reset_machines_service,
+    list_machines_service,
+    update_max_machines_service,
+    log_audit_event_service,
+    get_license_audit_logs_service,
+    get_all_audit_logs_service,
+    get_audit_stats_service,
 )
 
 
@@ -60,9 +75,24 @@ def create_license(payload: LicenseCreateRequest) -> LicenseCreateResponse:
 
 
 @router.get(
+    "/secret-key",
+    response_model=dict,
+)
+def get_offline_secret_key(
+    _: None = Depends(require_admin_or_api_key),
+) -> dict:
+    """
+    Get the secret key for offline license HMAC checksum.
+    This key is required by the SDK to create tamper-proof offline license files.
+    """
+    from Cryptographyyy import OFFLINE_SECRET_KEY
+    return {"secret_key": OFFLINE_SECRET_KEY}
+
+
+@router.get(
     "/{license_key}",
     response_model=LicenseDetailsResponse,
-    dependencies=[Depends(require_admin)],
+    dependencies=[Depends(require_admin_or_api_key)],
 )
 def get_license(license_key: str) -> LicenseDetailsResponse:
     try:
@@ -104,16 +134,37 @@ def list_licenses(
 @router.post(
     "/{license_key}/activate",
     response_model=LicenseActivateResponse,
-    dependencies=[Depends(require_admin)],
 )
-def activate_license(license_key: str) -> LicenseActivateResponse:
+def activate_license(
+    license_key: str,
+    payload: Optional[LicenseActivateRequest] = None,
+) -> LicenseActivateResponse:
+    mac_address = payload.mac_address if payload else None
+    
     try:
         activated = activate_license_service(license_key)
+        
+        if mac_address:
+            bind_result = bind_machine_service(license_key, mac_address)
+            if not bind_result.get("success"):
+                if bind_result.get("reason") == "mac_bound_to_other_license":
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"MAC address already bound to license: {bind_result.get('other_license')}",
+                    )
+                elif bind_result.get("reason") == "max_machines_reached":
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Maximum machines ({bind_result.get('max')}) reached for this license.",
+                    )
+                    
     except LicenseNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="License not found.",
         )
+    except HTTPException:
+        raise
     except DatabaseError as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -284,6 +335,23 @@ async def validate_license(
 ) -> LicenseValidationResponse:
     try:
         result = validate_license_service(payload.license_key)
+        
+        client_ip = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent", None)
+        
+        log_audit_event_service(
+            license_key=payload.license_key,
+            event_type="license_validation",
+            ip_address=client_ip,
+            user_agent=user_agent,
+            success=result.get("is_valid", False),
+            details={
+                "is_valid": result.get("is_valid"),
+                "state": result.get("state"),
+                "product_id": result.get("product_id"),
+            },
+            is_offline=False
+        )
     except DatabaseError as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -291,4 +359,248 @@ async def validate_license(
         ) from exc
 
     return LicenseValidationResponse(**result)
+
+
+@router.post(
+    "/offline-check",
+    status_code=status.HTTP_200_OK,
+)
+async def log_offline_check(
+    payload: dict,
+    request: Request,
+) -> dict:
+    """Log an offline license check from the SDK."""
+    license_key = payload.get("license_key")
+    is_valid = payload.get("is_valid", False)
+    machine_id = payload.get("machine_id")
+    
+    if not license_key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="license_key is required.",
+        )
+    
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent", None)
+    
+    log_audit_event_service(
+        license_key=license_key,
+        event_type="offline_license_check",
+        mac_address=machine_id,
+        ip_address=client_ip,
+        user_agent=user_agent,
+        success=is_valid,
+        details={
+            "is_valid": is_valid,
+            "machine_id": machine_id,
+            "offline_check": True,
+        },
+        is_offline=True
+    )
+    
+    return {"success": True, "message": "Offline check logged."}
+
+
+@router.get(
+    "/{license_key}/machines",
+    response_model=List[MachineInfo],
+    dependencies=[Depends(require_admin_or_api_key)],
+)
+def list_machines(license_key: str) -> List[MachineInfo]:
+    try:
+        machines = list_machines_service(license_key)
+    except DatabaseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to list machines.",
+        ) from exc
+    
+    return [MachineInfo(**machine) for machine in machines]
+
+
+@router.post(
+    "/{license_key}/machines",
+    response_model=MachineBindResponse,
+    dependencies=[Depends(require_admin_or_api_key)],
+)
+def bind_machine(
+    license_key: str,
+    payload: MachineBindRequest,
+) -> MachineBindResponse:
+    try:
+        result = bind_machine_service(license_key, payload.mac_address, payload.machine_name)
+    except LicenseNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="License not found.",
+        )
+    except DatabaseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to bind machine.",
+        ) from exc
+    
+    if not result.get("success"):
+        if result.get("reason") == "mac_bound_to_other_license":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"MAC address already bound to another license in the same product: {result.get('other_license')}",
+            )
+        elif result.get("reason") == "max_machines_reached":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Maximum machines ({result.get('max')}) reached for this license.",
+            )
+    
+    return MachineBindResponse(
+        success=True,
+        action=result.get("action"),
+    )
+
+
+@router.delete(
+    "/{license_key}/machines/{mac_address}",
+    response_model=LicenseStateChangeResponse,
+    dependencies=[Depends(require_admin_or_api_key)],
+)
+def unbind_machine(
+    license_key: str,
+    mac_address: str,
+) -> LicenseStateChangeResponse:
+    try:
+        success = unbind_machine_service(license_key, mac_address)
+    except LicenseNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="License or machine not found.",
+        )
+    except DatabaseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to unbind machine.",
+        ) from exc
+    
+    return LicenseStateChangeResponse(status="unbound")
+
+
+@router.delete(
+    "/{license_key}/machines",
+    response_model=LicenseStateChangeResponse,
+    dependencies=[Depends(require_admin_or_api_key)],
+)
+def reset_machines(
+    license_key: str,
+) -> LicenseStateChangeResponse:
+    try:
+        reset_machines_service(license_key)
+    except DatabaseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset machines.",
+        ) from exc
+    
+    return LicenseStateChangeResponse(status="reset")
+
+
+@router.put(
+    "/{license_key}/max-machines",
+    response_model=LicenseStateChangeResponse,
+    dependencies=[Depends(require_admin_or_api_key)],
+)
+def update_max_machines(
+    license_key: str,
+    payload: MaxMachinesUpdateRequest,
+) -> LicenseStateChangeResponse:
+    try:
+        success = update_max_machines_service(license_key, payload.max_machines)
+    except LicenseNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="License not found.",
+        )
+    except DatabaseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update max machines.",
+        ) from exc
+    
+    return LicenseStateChangeResponse(status="updated")
+
+
+# Audit Log Endpoints
+
+@router.get(
+    "/audit/logs",
+    response_model=List[dict],
+    dependencies=[Depends(require_admin_or_api_key)],
+)
+def get_all_audit_logs(
+    search: Optional[str] = None,
+    event_type: Optional[str] = None,
+    license_key: Optional[str] = None,
+    is_offline: Optional[bool] = None,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> List[dict]:
+    """Get all audit logs with filters."""
+    try:
+        logs = get_all_audit_logs_service(
+            search=search,
+            event_type=event_type,
+            license_key=license_key,
+            is_offline=is_offline,
+            from_date=from_date,
+            to_date=to_date,
+            limit=limit,
+            offset=offset
+        )
+    except DatabaseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get audit logs.",
+        ) from exc
+    
+    return logs
+
+
+@router.get(
+    "/audit/stats",
+    response_model=dict,
+    dependencies=[Depends(require_admin_or_api_key)],
+)
+def get_audit_stats(license_key: Optional[str] = None) -> dict:
+    """Get audit statistics."""
+    try:
+        stats = get_audit_stats_service(license_key)
+    except DatabaseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get audit stats.",
+        ) from exc
+    
+    return stats
+
+
+@router.get(
+    "/{license_key}/audit/logs",
+    response_model=List[dict],
+    dependencies=[Depends(require_admin_or_api_key)],
+)
+def get_license_audit_logs(
+    license_key: str,
+    limit: int = 100,
+    offset: int = 0,
+) -> List[dict]:
+    """Get audit logs for a specific license."""
+    try:
+        logs = get_license_audit_logs_service(license_key, limit, offset)
+    except DatabaseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get audit logs.",
+        ) from exc
+    
+    return logs
 

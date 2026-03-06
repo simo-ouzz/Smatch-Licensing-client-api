@@ -599,6 +599,42 @@ body {
     overflow: hidden;
 }
 
+/* Table Filters */
+.table-filters {
+    display: flex;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+.filter-input,
+.filter-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.filter-input::placeholder {
+    color: var(--text-muted);
+}
+
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -1033,4 +1069,173 @@ body {
 
 .btn-info:hover {
     background: #0891b2;
+}
+
+/* Machine Binding Styles */
+.detail-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.detail-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.machine-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: var(--primary);
+    color: white;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.machines-list {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+}
+
+.machine-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.machine-item:last-child {
+    border-bottom: none;
+}
+
+.machine-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.machine-mac {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+.machine-name {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.machine-date {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.machine-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.machines-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+}
+
+/* License Details Tabs */
+.license-details-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-tertiary);
+}
+
+.tab-btn {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+.tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 9px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 6px;
+}
+
+.tab-btn.active .tab-badge {
+    background: rgba(255,255,255,0.3);
+}
+
+.tab-content {
+    padding: 20px;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+.machines-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.machines-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.max-machines {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.machines-actions {
+    display: flex;
+    gap: 8px;
 }

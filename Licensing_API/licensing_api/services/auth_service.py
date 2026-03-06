@@ -335,8 +335,31 @@ def list_api_keys(user_id: int) -> List[Dict[str, Any]]:
                     "key_prefix": get_key_prefix(key_hash),
                     "name": name,
                     "is_active": is_active,
-                    "created_at": created_at,
-                    "expires_at": expires_at,
+                    "created_at": created_at.isoformat() if created_at else None,
+                    "expires_at": expires_at.isoformat() if expires_at else None,
+                })
+            return result
+
+
+def list_all_api_keys() -> List[Dict[str, Any]]:
+    """List all API keys (for admin)."""
+    with _get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT key_id, user_id, key_hash, name, is_active, created_at, expires_at FROM api_keys ORDER BY created_at DESC"
+            )
+            rows = cur.fetchall()
+            result = []
+            for row in rows:
+                key_id, user_id, key_hash, name, is_active, created_at, expires_at = row
+                result.append({
+                    "key_id": key_id,
+                    "user_id": user_id,
+                    "key_prefix": get_key_prefix(key_hash),
+                    "name": name,
+                    "is_active": is_active,
+                    "created_at": created_at.isoformat() if created_at else None,
+                    "expires_at": expires_at.isoformat() if expires_at else None,
                 })
             return result
 
@@ -402,3 +425,24 @@ def delete_api_key(key_id: int, user_id: int) -> bool:
             result = cur.fetchone()
             conn.commit()
             return result is not None
+
+
+def validate_api_key(api_key: str) -> bool:
+    """Validate an API key and return True if valid."""
+    if not api_key:
+        return False
+    
+    from licensing_api.core.auth import hash_api_key
+    
+    key_hash = hash_api_key(api_key)
+    
+    with _get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT is_active FROM api_keys 
+                   WHERE key_hash = %s 
+                   AND (expires_at IS NULL OR expires_at > NOW())""",
+                (key_hash,)
+            )
+            row = cur.fetchone()
+            return row is not None and row[0] is True

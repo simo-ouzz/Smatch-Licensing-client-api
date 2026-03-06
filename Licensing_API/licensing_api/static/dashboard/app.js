@@ -1,5 +1,6 @@
 const API_BASE = '';
 let currentProductId = null;
+let currentLicenses = [];
 let accessToken = localStorage.getItem('access_token');
 
 // DOM Elements
@@ -88,6 +89,11 @@ document.querySelectorAll('.nav-item').forEach(item => {
             document.querySelector('.page-title').textContent = 'API Keys';
             document.querySelector('.page-subtitle').textContent = 'Manage client API access keys';
             loadApiKeys();
+        } else if (page === 'audit-logs') {
+            document.getElementById('audit-logs-page').classList.remove('hidden');
+            document.querySelector('.page-title').textContent = 'Audit Logs';
+            document.querySelector('.page-subtitle').textContent = 'View license validation and activation history';
+            loadAuditLogs();
         }
     });
 });
@@ -129,7 +135,9 @@ async function apiRequest(endpoint, options = {}) {
         throw new Error(`API error: ${response.status}`);
     }
     
-    return response.json();
+    const text = await response.text();
+    if (!text) return null;
+    return JSON.parse(text);
 }
 
 // Load Products
@@ -205,6 +213,7 @@ async function loadLicenses(productId) {
     
     try {
         const licenses = await apiRequest(`/products/${productId}/licenses`);
+        currentLicenses = licenses;
         
         const active = licenses.filter(l => l.state === 'active').length;
         const expired = licenses.filter(l => new Date(l.expiry_date) < new Date()).length;
@@ -213,52 +222,103 @@ async function loadLicenses(productId) {
         document.getElementById('active-licenses').textContent = active;
         document.getElementById('expired-licenses').textContent = expired;
         
-        if (licenses.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No licenses yet</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = licenses.map(license => {
-            const isExpired = new Date(license.expiry_date) < new Date();
-            const isRevoked = license.state === 'revoked' || license.is_revoked === true;
-            const badgeClass = license.state === 'active' && !isExpired ? 'badge-success' : 
-                             license.state === 'suspended' ? 'badge-warning' : 
-                             isRevoked ? 'badge-danger' : 'badge-secondary';
-            
-            const displayState = isRevoked ? 'revoked' : (license.state || 'unknown');
-            
-            // Calculate days remaining
-            const expiryDate = new Date(license.expiry_date);
-            const now = new Date();
-            const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-            const daysLeftDisplay = daysLeft > 0 ? `${daysLeft} days` : 'Expired';
-            const expiryDisplay = expiryDate.toLocaleString();
-            
-            return `
-                <tr>
-                    <td onclick="showLicenseDetails('${license.license_key}')" style="cursor:pointer"><code>${license.license_key}</code></td>
-                    <td onclick="showLicenseDetails('${license.license_key}')" style="cursor:pointer">${license.company_name}</td>
-                    <td onclick="showLicenseDetails('${license.license_key}')" style="cursor:pointer"><span class="badge ${badgeClass}">${displayState}</span></td>
-                    <td onclick="showLicenseDetails('${license.license_key}')" style="cursor:pointer">${daysLeftDisplay}</td>
-                    <td onclick="showLicenseDetails('${license.license_key}')" style="cursor:pointer" title="${expiryDisplay}">${expiryDate.toLocaleDateString()}</td>
-                    <td>
-                        <div class="actions">
-                            <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation(); showLicenseDetails('${license.license_key}')" title="View Details">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <path d="M7 3.5C4.5 3.5 2.5 5.5 1.5 7c1 1.5 3 3.5 5.5 3.5s4.5-2 5.5-3.5c-1-1.5-3-3.5-5.5-3.5z" stroke="currentColor" stroke-width="1.2"/>
-                                    <circle cx="7" cy="7" r="1.5" stroke="currentColor" stroke-width="1.2"/>
-                                </svg>
-                            </button>
-                            <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); copyKey('${license.license_key}')">Copy</button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        renderLicenses(licenses);
     } catch (error) {
         console.error('Error loading licenses:', error);
         tbody.innerHTML = '<tr><td colspan="6" class="error">Failed to load licenses</td></tr>';
     }
+}
+
+function renderLicenses(licenses) {
+    const tbody = document.getElementById('licenses-table-body');
+    
+    if (licenses.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No licenses found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = licenses.map(license => {
+        const isExpired = new Date(license.expiry_date) < new Date();
+        const isRevoked = license.state === 'revoked' || license.is_revoked === true;
+        const badgeClass = license.state === 'active' && !isExpired ? 'badge-success' : 
+                         license.state === 'suspended' ? 'badge-warning' : 
+                         isRevoked ? 'badge-danger' : 'badge-secondary';
+        
+        const displayState = isRevoked ? 'revoked' : (license.state || 'unknown');
+        
+        const expiryDate = new Date(license.expiry_date);
+        const now = new Date();
+        const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        const daysLeftDisplay = daysLeft > 0 ? `${daysLeft} days` : 'Expired';
+        const expiryDisplay = expiryDate.toLocaleString();
+        
+        return `
+            <tr>
+                <td onclick="showLicenseDetails('${license.license_key}')" style="cursor:pointer"><code>${license.license_key}</code></td>
+                <td onclick="showLicenseDetails('${license.license_key}')" style="cursor:pointer">${license.company_name}</td>
+                <td onclick="showLicenseDetails('${license.license_key}')" style="cursor:pointer"><span class="badge ${badgeClass}">${displayState}</span></td>
+                <td onclick="showLicenseDetails('${license.license_key}')" style="cursor:pointer">${daysLeftDisplay}</td>
+                <td onclick="showLicenseDetails('${license.license_key}')" style="cursor:pointer" title="${expiryDisplay}">${expiryDate.toLocaleDateString()}</td>
+                <td>
+                    <div class="actions">
+                        <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation(); showLicenseDetails('${license.license_key}')" title="View Details">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M7 3.5C4.5 3.5 2.5 5.5 1.5 7c1 1.5 3 3.5 5.5 3.5s4.5-2 5.5-3.5c-1-1.5-3-3.5-5.5-3.5z" stroke="currentColor" stroke-width="1.2"/>
+                                <circle cx="7" cy="7" r="1.5" stroke="currentColor" stroke-width="1.2"/>
+                            </svg>
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); copyKey('${license.license_key}')">Copy</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function filterLicenses() {
+    const searchTerm = document.getElementById('license-search').value.toLowerCase();
+    const statusFilter = document.getElementById('license-status-filter').value;
+    const dateFrom = document.getElementById('license-date-from').value;
+    const dateTo = document.getElementById('license-date-to').value;
+    
+    let filtered = currentLicenses.filter(license => {
+        if (searchTerm && !license.license_key.toLowerCase().includes(searchTerm) && 
+            !license.company_name.toLowerCase().includes(searchTerm) &&
+            !license.email.toLowerCase().includes(searchTerm)) {
+            return false;
+        }
+        
+        if (statusFilter) {
+            const isRevoked = license.state === 'revoked' || license.is_revoked === true;
+            const state = isRevoked ? 'revoked' : license.state;
+            if (state !== statusFilter) return false;
+        }
+        
+        if (dateFrom) {
+            const expiryDate = new Date(license.expiry_date);
+            const fromDate = new Date(dateFrom);
+            if (expiryDate < fromDate) return false;
+        }
+        
+        if (dateTo) {
+            const expiryDate = new Date(license.expiry_date);
+            const toDate = new Date(dateTo);
+            toDate.setHours(23, 59, 59, 999);
+            if (expiryDate > toDate) return false;
+        }
+        
+        return true;
+    });
+    
+    renderLicenses(filtered);
+}
+
+function clearLicenseFilters() {
+    document.getElementById('license-search').value = '';
+    document.getElementById('license-status-filter').value = '';
+    document.getElementById('license-date-from').value = '';
+    document.getElementById('license-date-to').value = '';
+    renderLicenses(currentLicenses);
 }
 
 // Load API Keys
@@ -346,6 +406,7 @@ async function showLicenseDetails(licenseKey) {
         const btnUnsuspend = document.getElementById('btn-unsuspend');
         const btnExtend = document.getElementById('btn-extend');
         const btnRevoke = document.getElementById('btn-revoke');
+        const btnMaxMachines = document.getElementById('btn-max-machines');
         
         if (license.state === 'inactive') {
             btnActivate.style.display = 'inline-flex';
@@ -353,30 +414,141 @@ async function showLicenseDetails(licenseKey) {
             btnUnsuspend.style.display = 'none';
             btnExtend.style.display = 'none';
             btnRevoke.style.display = 'inline-flex';
+            btnMaxMachines.style.display = 'inline-flex';
         } else if (license.state === 'active') {
             btnActivate.style.display = 'none';
             btnSuspend.style.display = 'inline-flex';
             btnUnsuspend.style.display = 'none';
             btnExtend.style.display = 'inline-flex';
             btnRevoke.style.display = 'inline-flex';
+            btnMaxMachines.style.display = 'inline-flex';
         } else if (license.state === 'suspended') {
             btnActivate.style.display = 'none';
             btnSuspend.style.display = 'none';
             btnUnsuspend.style.display = 'inline-flex';
             btnExtend.style.display = 'none';
             btnRevoke.style.display = 'inline-flex';
+            btnMaxMachines.style.display = 'inline-flex';
         } else if (isRevoked) {
             btnActivate.style.display = 'none';
             btnSuspend.style.display = 'none';
             btnUnsuspend.style.display = 'none';
             btnExtend.style.display = 'none';
             btnRevoke.style.display = 'none';
+            btnMaxMachines.style.display = 'none';
         }
         
         showModal('license-details-modal');
         
+        switchLicenseTab('details');
+        
     } catch (error) {
         alert('Failed to load license details');
+    }
+}
+
+function switchLicenseTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('hidden', content.id !== `tab-${tab}`);
+    });
+    
+    if (tab === 'machines' && currentLicenseKey) {
+        loadMachines(currentLicenseKey);
+    }
+}
+
+async function loadMachines(licenseKey) {
+    const machinesList = document.getElementById('machines-list');
+    const machineCount = document.getElementById('machine-count');
+    const maxMachinesEl = document.getElementById('max-machines');
+    
+    try {
+        const license = await apiRequest(`/licenses/${licenseKey}`);
+        const machines = await apiRequest(`/licenses/${licenseKey}/machines`);
+        
+        const maxMachines = license.max_machines || 1;
+        machineCount.textContent = machines.length;
+        maxMachinesEl.textContent = `${machines.length} / ${maxMachines} machines`;
+        
+        if (machines.length === 0) {
+            machinesList.innerHTML = '<div class="machines-empty">No machines bound</div>';
+            return;
+        }
+        
+        machinesList.innerHTML = machines.map(machine => `
+            <div class="machine-item">
+                <div class="machine-info">
+                    <span class="machine-mac">${machine.mac_address}</span>
+                    <span class="machine-name">${machine.machine_name || 'Unnamed'}</span>
+                    <span class="machine-date">Bound: ${new Date(machine.bound_at).toLocaleDateString()}</span>
+                </div>
+                <button class="btn btn-sm btn-ghost" onclick="unbindMachine('${licenseKey}', '${machine.mac_address}')" title="Unbind">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M10 4L4 10M4 4l6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load machines:', error);
+        machinesList.innerHTML = '<div class="machines-empty">Failed to load machines</div>';
+    }
+}
+
+async function refreshMachines() {
+    if (currentLicenseKey) {
+        loadMachines(currentLicenseKey);
+    }
+}
+
+async function unbindMachine(licenseKey, macAddress) {
+    if (!confirm(`Unbind machine ${macAddress}?`)) return;
+    
+    try {
+        await apiRequest(`/licenses/${licenseKey}/machines/${macAddress}`, { method: 'DELETE' });
+        alert('Machine unbound successfully');
+        loadMachines(licenseKey);
+    } catch (error) {
+        alert('Failed to unbind machine');
+    }
+}
+
+function showAddMachineModal() {
+    const mac = prompt('Enter MAC address (e.g., AA:BB:CC:DD:EE:FF):');
+    if (!mac) return;
+    
+    const name = prompt('Enter machine name (optional):');
+    
+    bindMachine(currentLicenseKey, mac, name || null);
+}
+
+async function bindMachine(licenseKey, macAddress, machineName) {
+    try {
+        await apiRequest(`/licenses/${licenseKey}/machines`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mac_address: macAddress, machine_name: machineName })
+        });
+        alert('Machine bound successfully');
+        loadMachines(licenseKey);
+    } catch (error) {
+        alert('Failed to bind machine: ' + (error.message || 'Unknown error'));
+    }
+}
+
+async function resetAllMachines() {
+    if (!currentLicenseKey) return;
+    if (!confirm('Reset all machines for this license? This will allow the license to be bound to new machines.')) return;
+    
+    try {
+        await apiRequest(`/licenses/${currentLicenseKey}/machines`, { method: 'DELETE' });
+        alert('Machines reset successfully');
+        loadMachines(currentLicenseKey);
+    } catch (error) {
+        alert('Failed to reset machines');
     }
 }
 
@@ -471,6 +643,83 @@ document.getElementById('extend-form').addEventListener('submit', async (e) => {
         }
     } catch (error) {
         alert('Failed to extend license');
+    }
+});
+
+function toggleMaxMachinesInput() {
+    const select = document.getElementById('max-machines-select');
+    const customGroup = document.getElementById('custom-max-machines-group');
+    customGroup.style.display = select.value === 'custom' ? 'block' : 'none';
+}
+
+async function modalMaxMachines() {
+    if (!currentLicenseKey) {
+        alert('No license selected');
+        return;
+    }
+    
+    let license;
+    try {
+        license = await apiRequest(`/licenses/${currentLicenseKey}`);
+    } catch (error) {
+        console.error('Failed to load license:', error);
+        alert('Failed to load license details');
+        return;
+    }
+    
+    const currentMax = license.max_machines != null ? license.max_machines : -1;
+    
+    const select = document.getElementById('max-machines-select');
+    const customInput = document.getElementById('max-machines-custom');
+    const customGroup = document.getElementById('custom-max-machines-group');
+    
+    if (currentMax === -1 || currentMax === null) {
+        select.value = '-1';
+        customGroup.style.display = 'none';
+    } else if (['1', '2', '3', '5', '10'].includes(String(currentMax))) {
+        select.value = String(currentMax);
+        customGroup.style.display = 'none';
+    } else {
+        select.value = 'custom';
+        customInput.value = currentMax;
+        customGroup.style.display = 'block';
+    }
+    
+    document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+    document.getElementById('max-machines-modal').classList.remove('hidden');
+    modalOverlay.classList.remove('hidden');
+}
+
+document.getElementById('max-machines-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const select = document.getElementById('max-machines-select');
+    let maxMachines = parseInt(select.value);
+    
+    if (select.value === 'custom') {
+        maxMachines = parseInt(document.getElementById('max-machines-custom').value);
+    }
+    
+    try {
+        const result = await apiRequest(`/licenses/${currentLicenseKey}/max-machines`, { 
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ max_machines: maxMachines })
+        });
+        
+        hideModal();
+        document.getElementById('max-machines-modal').classList.add('hidden');
+        
+        loadLicenses(currentProductId);
+        
+        if (currentLicenseKey) {
+            showLicenseDetails(currentLicenseKey);
+        }
+        
+        alert('Max machines updated successfully');
+    } catch (error) {
+        console.error('Error updating max machines:', error);
+        alert('Failed to update max machines: ' + error.message);
     }
 });
 
@@ -628,3 +877,118 @@ document.getElementById('api-key-form').addEventListener('submit', async (e) => 
         alert('Failed to create API key');
     }
 });
+
+// ==========================================
+// Audit Logs
+// ==========================================
+
+let currentAuditLogs = [];
+
+async function loadAuditLogs() {
+    const tbody = document.getElementById('audit-logs-table-body');
+    tbody.innerHTML = '<tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr>';
+    
+    try {
+        const params = new URLSearchParams();
+        params.append('limit', 100);
+        
+        const logs = await apiRequest(`/licenses/audit/logs?${params.toString()}`);
+        currentAuditLogs = Array.isArray(logs) ? logs : (logs.logs || []);
+        
+        // Calculate stats
+        const total = currentAuditLogs.length;
+        const success = currentAuditLogs.filter(l => l.success).length;
+        const failed = currentAuditLogs.filter(l => !l.success).length;
+        const offline = currentAuditLogs.filter(l => l.is_offline).length;
+        
+        document.getElementById('audit-total').textContent = total;
+        document.getElementById('audit-success').textContent = success;
+        document.getElementById('audit-failed').textContent = failed;
+        document.getElementById('audit-offline').textContent = offline;
+        
+        renderAuditLogs(currentAuditLogs);
+    } catch (error) {
+        console.error('Error loading audit logs:', error);
+        tbody.innerHTML = '<tr><td colspan="6" class="error">Failed to load audit logs</td></tr>';
+    }
+}
+
+function renderAuditLogs(logs) {
+    const tbody = document.getElementById('audit-logs-table-body');
+    
+    if (!logs || logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No audit logs found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = logs.map(log => {
+        const eventType = log.event_type || 'unknown';
+        const statusBadge = log.success 
+            ? '<span class="badge badge-success">Success</span>' 
+            : '<span class="badge badge-danger">Failed</span>';
+        const typeBadge = log.is_offline 
+            ? '<span class="badge badge-warning">Offline</span>' 
+            : '<span class="badge badge-info">Online</span>';
+        
+        return `
+            <tr>
+                <td>${new Date(log.created_at).toLocaleString()}</td>
+                <td><code>${log.license_key || '-'}</code></td>
+                <td>${eventType}</td>
+                <td>${statusBadge}</td>
+                <td>${typeBadge}</td>
+                <td>${log.ip_address || '-'}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function filterAuditLogs() {
+    const searchTerm = document.getElementById('audit-search').value.toLowerCase();
+    const eventFilter = document.getElementById('audit-event-filter').value;
+    const offlineFilter = document.getElementById('audit-offline-filter').value;
+    const dateFrom = document.getElementById('audit-date-from').value;
+    const dateTo = document.getElementById('audit-date-to').value;
+    
+    let filtered = currentAuditLogs.filter(log => {
+        if (searchTerm && log.license_key && !log.license_key.toLowerCase().includes(searchTerm)) {
+            return false;
+        }
+        
+        if (eventFilter && log.event_type !== eventFilter) {
+            return false;
+        }
+        
+        if (offlineFilter !== '') {
+            const isOffline = log.is_offline === true;
+            if (offlineFilter === 'true' && !isOffline) return false;
+            if (offlineFilter === 'false' && isOffline) return false;
+        }
+        
+        if (dateFrom) {
+            const logDate = new Date(log.created_at);
+            const fromDate = new Date(dateFrom);
+            if (logDate < fromDate) return false;
+        }
+        
+        if (dateTo) {
+            const logDate = new Date(log.created_at);
+            const toDate = new Date(dateTo);
+            toDate.setHours(23, 59, 59, 999);
+            if (logDate > toDate) return false;
+        }
+        
+        return true;
+    });
+    
+    renderAuditLogs(filtered);
+}
+
+function clearAuditFilters() {
+    document.getElementById('audit-search').value = '';
+    document.getElementById('audit-event-filter').value = '';
+    document.getElementById('audit-offline-filter').value = '';
+    document.getElementById('audit-date-from').value = '';
+    document.getElementById('audit-date-to').value = '';
+    renderAuditLogs(currentAuditLogs);
+}

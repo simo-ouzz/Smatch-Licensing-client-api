@@ -39,11 +39,15 @@ class LicenseDetailsResponse(BaseModel):
     revoked_reason: Optional[str]
     creation_date: str
     activation_date: Optional[str]
+    activation_mac: Optional[str] = None
     expiry_date: str
     remaining_seconds: int
     remaining_days: int
     grace_period_days: int
     product_id: int
+    license_id_hex: Optional[str] = None
+    signature_hex: Optional[str] = None
+    max_machines: int = 1
 
 
 class LicenseListItem(BaseModel):
@@ -79,6 +83,7 @@ class LicenseRestoreResponse(BaseModel):
 
 class LicenseValidationRequest(BaseModel):
     license_key: str
+    mac_address: Optional[str] = None
 
 
 class LicenseValidationResponse(BaseModel):
@@ -86,4 +91,32 @@ class LicenseValidationResponse(BaseModel):
     reason: Optional[str] = None
     state: Optional[str] = None
     expires_at: Optional[str] = None
+
+
+class LicenseActivateRequest(BaseModel):
+    mac_address: Optional[str] = None
+
+
+class MachineBindRequest(BaseModel):
+    mac_address: str = Field(..., pattern=r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$")
+    machine_name: Optional[str] = None
+
+
+class MachineInfo(BaseModel):
+    id: int
+    mac_address: str
+    machine_name: Optional[str]
+    bound_at: str
+    last_seen_at: Optional[str]
+    is_active: bool
+
+
+class MachineBindResponse(BaseModel):
+    success: bool
+    action: Optional[str] = None
+    reason: Optional[str] = None
+
+
+class MaxMachinesUpdateRequest(BaseModel):
+    max_machines: int = Field(..., ge=0)
 

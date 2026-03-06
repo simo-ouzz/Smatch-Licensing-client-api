@@ -111,6 +111,37 @@ def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
     return current_user
 
 
+async def require_admin_or_api_key(request: Request, api_key: str = Depends(API_KEY_HEADER)) -> Optional[dict]:
+    """
+    Dependency that accepts either JWT token or API key.
+    Returns user info if JWT, or None if API key (for logging purposes).
+    """
+    if api_key:
+        # Validate API key exists
+        from licensing_api.services import auth_service
+        try:
+            valid = auth_service.validate_api_key(api_key)
+            if valid:
+                return {"role": "api_key", "source": "api_key"}
+        except Exception:
+            pass
+    
+    # Try JWT token
+    try:
+        token = request.headers.get("Authorization", "").replace("Bearer ", "")
+        if token:
+            payload = verify_access_token(token)
+            if payload:
+                return payload
+    except Exception:
+        pass
+    
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+    )
+
+
 def require_role(allowed_roles: List[str]):
     def role_checker(current_user: dict = Depends(get_current_user)) -> dict:
         if current_user.get("role") not in allowed_roles:

@@ -243,3 +243,110 @@ def delete_product_service(product_id: int) -> Dict[str, Any]:
 
     return result
 
+
+@_wrap_db_errors
+def bind_machine_service(license_key: str, mac_address: str, machine_name: str = None) -> Dict[str, Any]:
+    result = core.bind_machine_to_license(license_key, mac_address, machine_name)
+    if not result.get("success"):
+        if result.get("reason") == "license_not_found":
+            raise LicenseNotFoundError()
+    return result
+
+
+@_wrap_db_errors
+def unbind_machine_service(license_key: str, mac_address: str) -> bool:
+    success = core.unbind_machine_from_license(license_key, mac_address)
+    if not success:
+        raise LicenseNotFoundError()
+    return success
+
+
+@_wrap_db_errors
+def reset_machines_service(license_key: str) -> bool:
+    return core.reset_all_machines(license_key)
+
+
+@_wrap_db_errors
+def list_machines_service(license_key: str) -> List[Dict[str, Any]]:
+    return core.list_license_machines(license_key)
+
+
+@_wrap_db_errors
+def update_max_machines_service(license_key: str, max_machines: int) -> bool:
+    success = core.update_max_machines(license_key, max_machines)
+    if not success:
+        raise LicenseNotFoundError()
+    return success
+
+
+@_wrap_db_errors
+def check_machine_binding_service(license_key: str, mac_address: str) -> Dict[str, Any]:
+    return core.check_machine_binding(license_key, mac_address)
+
+
+@_wrap_db_errors
+def get_machine_count_service(license_key: str) -> int:
+    return core.get_machine_count(license_key)
+
+
+# Audit Log Service Functions
+
+@_wrap_db_errors
+def log_audit_event_service(
+    license_key: str,
+    event_type: str,
+    mac_address: str = None,
+    ip_address: str = None,
+    user_agent: str = None,
+    success: bool = True,
+    details: dict = None,
+    is_offline: bool = False
+):
+    """Log an audit event."""
+    core.log_audit_event(
+        license_key=license_key,
+        event_type=event_type,
+        mac_address=mac_address,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        success=success,
+        details=details,
+        is_offline=is_offline
+    )
+
+
+@_wrap_db_errors
+def get_license_audit_logs_service(license_key: str, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+    """Get audit logs for a specific license."""
+    return core.get_license_audit_logs(license_key, limit, offset)
+
+
+@_wrap_db_errors
+def get_all_audit_logs_service(
+    search: str = None,
+    event_type: str = None,
+    license_key: str = None,
+    is_offline: bool = None,
+    from_date: str = None,
+    to_date: str = None,
+    limit: int = 100,
+    offset: int = 0
+) -> List[Dict[str, Any]]:
+    """Get all audit logs with filters."""
+    return core.get_all_audit_logs(
+        search=search,
+        event_type=event_type,
+        license_key=license_key,
+        is_offline=is_offline,
+        from_date=from_date,
+        to_date=to_date,
+        limit=limit,
+        offset=offset
+    )
+
+
+@_wrap_db_errors
+def get_audit_stats_service(license_key: str = None) -> dict:
+    """Get audit statistics."""
+    return core.get_audit_stats(license_key)
+

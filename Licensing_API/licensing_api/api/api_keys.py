@@ -8,7 +8,7 @@ from licensing_api.models.user_models import (
     APIKeyResponse,
 )
 from licensing_api.services import auth_service
-from licensing_api.core.security import get_current_user
+from licensing_api.core.security import get_current_user, require_admin
 
 router = APIRouter(prefix="/api-keys", tags=["api-keys"])
 
@@ -46,6 +46,18 @@ def list_api_keys(
 ):
     user_id = int(current_user["sub"])
     keys = auth_service.list_api_keys(user_id)
+    return [APIKeyResponse(**key) for key in keys]
+
+
+@router.get(
+    "/all-keys",
+    response_model=List[APIKeyResponse],
+)
+def list_all_api_keys(
+    current_user: dict = Depends(require_admin),
+):
+    """List all API keys (admin only)."""
+    keys = auth_service.list_all_api_keys()
     return [APIKeyResponse(**key) for key in keys]
 
 
