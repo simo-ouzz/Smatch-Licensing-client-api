@@ -992,3 +992,326 @@ function clearAuditFilters() {
     document.getElementById('audit-date-to').value = '';
     renderAuditLogs(currentAuditLogs);
 }
+
+// ============================================
+// Language Translations (English / French)
+// ============================================
+
+const translations = {
+    en: {
+        // Navigation
+        products: "Products",
+        apiKeys: "API Keys",
+        auditLogs: "Audit Logs",
+        admin: "Administrator",
+        
+        // Buttons
+        newProduct: "New Product",
+        createLicense: "Create License",
+        docs: "Docs",
+        signIn: "Sign In",
+        logout: "Logout",
+        
+        // Page titles
+        manageProducts: "Manage your products and licenses",
+        manageApiKeys: "Manage client API access keys",
+        auditHistory: "View license validation and activation history",
+        
+        // Products
+        noProducts: "No products yet",
+        createFirstProduct: "Create your first product to get started",
+        productName: "Product Name",
+        description: "Description",
+        active: "Active",
+        inactive: "Inactive",
+        licenses: "licenses",
+        viewDetails: "View Details",
+        
+        // Licenses
+        licenseKey: "License Key",
+        company: "Company",
+        email: "Email",
+        type: "Type",
+        state: "State",
+        expiryDate: "Expiry Date",
+        created: "Created",
+        actions: "Actions",
+        activate: "Activate",
+        deactivate: "Deactivate",
+        revoke: "Revoke",
+        restore: "Restore",
+        extend: "Extend",
+        delete: "Delete",
+        noLicenses: "No licenses yet",
+        createFirstLicense: "Create your first license for this product",
+        
+        // License States
+        active_state: "Active",
+        inactive_state: "Inactive",
+        suspended: "Suspended",
+        revoked: "Revoked",
+        
+        // License Types
+        LA: "L.A",
+        LO: "L.O",
+        LM: "L.M",
+        LT: "L.T",
+        
+        // Forms
+        licenseType: "License Type",
+        periodDays: "Period (Days)",
+        gracePeriod: "Grace Period (Days)",
+        maxMachines: "Max Machines",
+        unlimited: "Unlimited",
+        
+        // Machine Binding
+        machines: "Machines",
+        boundMachines: "Bound Machines",
+        macAddress: "MAC Address",
+        machineName: "Machine Name",
+        boundAt: "Bound At",
+        lastSeen: "Last Seen",
+        noMachines: "No machines bound",
+        
+        // API Keys
+        keyId: "Key ID",
+        name: "Name",
+        createdAt: "Created At",
+        expiresAt: "Expires At",
+        status: "Status",
+        noApiKeys: "No API keys yet",
+        createFirstApiKey: "Create your first API key",
+        
+        // Audit Logs
+        eventType: "Event Type",
+        license_key: "License Key",
+        mac_address: "MAC Address",
+        ipAddress: "IP Address",
+        success: "Success",
+        timestamp: "Timestamp",
+        noLogs: "No audit logs yet",
+        
+        // Events
+        activation: "Activation",
+        validation: "Validation",
+        deactivation: "Deactivation",
+        
+        // Messages
+        confirmDelete: "Are you sure you want to delete this?",
+        created: "Created successfully",
+        updated: "Updated successfully",
+        deleted: "Deleted successfully",
+        error: "An error occurred",
+        
+        // Search & Filters
+        search: "Search...",
+        filterByEvent: "Filter by event",
+        filterByOffline: "Filter by offline",
+        all: "All",
+        online: "Online",
+        offline: "Offline",
+        
+        // Login
+        email_label: "Email",
+        password_label: "Password",
+        invalidCredentials: "Invalid email or password",
+    },
+    fr: {
+        // Navigation
+        products: "Produits",
+        apiKeys: "Cles API",
+        auditLogs: "Journaux d'Audit",
+        admin: "Administrateur",
+        
+        // Buttons
+        newProduct: "Nouveau Produit",
+        createLicense: "Creer Licence",
+        docs: "Docs",
+        signIn: "Connexion",
+        logout: "Deconnexion",
+        
+        // Page titles
+        manageProducts: "Gerez vos produits et licences",
+        manageApiKeys: "Gerez les cles API client",
+        auditHistory: "Voir l'historique des validations et activations",
+        
+        // Products
+        noProducts: "Pas encore de produits",
+        createFirstProduct: "Creez votre premier produit pour commencer",
+        productName: "Nom du Produit",
+        description: "Description",
+        active: "Actif",
+        inactive: "Inactif",
+        licenses: "licences",
+        viewDetails: "Voir Details",
+        
+        // Licenses
+        licenseKey: "Cle de Licence",
+        company: "Entreprise",
+        email: "Email",
+        type: "Type",
+        state: "Etat",
+        expiryDate: "Date d'Expiration",
+        created: "Cree",
+        actions: "Actions",
+        activate: "Activer",
+        deactivate: "Desactiver",
+        revoke: "Revoquer",
+        restore: "Restaurer",
+        extend: "Prolonger",
+        delete: "Supprimer",
+        noLicenses: "Pas encore de licences",
+        createFirstLicense: "Creez votre premiere licence pour ce produit",
+        
+        // License States
+        active_state: "Actif",
+        inactive_state: "Inactif",
+        suspended: "Suspendu",
+        revoked: "Revoque",
+        
+        // License Types
+        LA: "L.A",
+        LO: "L.O",
+        LM: "L.M",
+        LT: "L.T",
+        
+        // Forms
+        licenseType: "Type de Licence",
+        periodDays: "Periode (Jours)",
+        gracePeriod: "Periode de Grace (Jours)",
+        maxMachines: "Machines Max",
+        unlimited: "Illimite",
+        
+        // Machine Binding
+        machines: "Machines",
+        boundMachines: "Machines Liees",
+        macAddress: "Adresse MAC",
+        machineName: "Nom de la Machine",
+        boundAt: "Lie Le",
+        lastSeen: "Derniere Connexion",
+        noMachines: "Aucune machine liee",
+        
+        // API Keys
+        keyId: "ID de Cle",
+        name: "Nom",
+        createdAt: "Cree Le",
+        expiresAt: "Expire Le",
+        status: "Statut",
+        noApiKeys: "Pas encore de cles API",
+        createFirstApiKey: "Creez votre premiere cle API",
+        
+        // Audit Logs
+        eventType: "Type d'Evenement",
+        license_key: "Cle de Licence",
+        mac_address: "Adresse MAC",
+        ipAddress: "Adresse IP",
+        success: "Succes",
+        timestamp: "Horodatage",
+        noLogs: "Pas encore de journaux",
+        
+        // Events
+        activation: "Activation",
+        validation: "Validation",
+        deactivation: "Desactivation",
+        
+        // Messages
+        confirmDelete: "Etes-vous sur de vouloir supprimer ceci?",
+        created: "Cree avec succes",
+        updated: "Mis a jour avec succes",
+        deleted: "Supprime avec succes",
+        error: "Une erreur s'est produite",
+        
+        // Search & Filters
+        search: "Rechercher...",
+        filterByEvent: "Filtrer par evenement",
+        filterByOffline: "Filtrer par hors ligne",
+        all: "Tous",
+        online: "En ligne",
+        offline: "Hors ligne",
+        
+        // Login
+        email_label: "Email",
+        password_label: "Mot de passe",
+        invalidCredentials: "Email ou mot de passe invalide",
+    }
+};
+
+// Set language function (global)
+function setLanguage(lang) {
+    const t = translations[lang];
+    
+    // Update buttons
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+    
+    // Save preference
+    localStorage.setItem('dashboard-lang', lang);
+    
+    // Update all elements with data-i18n attribute
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (t[key]) {
+            el.textContent = t[key];
+        }
+    });
+    
+    // Update page titles based on current page
+    updatePageTitles();
+    
+    // Update sidebar nav items
+    const navItems = {
+        'products': t.products,
+        'api-keys': t.apiKeys,
+        'audit-logs': t.auditLogs
+    };
+    document.querySelectorAll('.nav-item span').forEach(span => {
+        const page = span.closest('.nav-item').dataset.page;
+        if (navItems[page]) {
+            span.textContent = navItems[page];
+        }
+    });
+    
+    // Update user role
+    const userRoleEl = document.querySelector('.user-role');
+    if (userRoleEl) userRoleEl.textContent = t.admin;
+    
+    // Update login form labels
+    const emailLabel = document.querySelector('#login-form label[for="login-email"]');
+    if (emailLabel) emailLabel.textContent = t.email_label;
+    const passwordLabel = document.querySelector('#login-form label[for="login-password"]');
+    if (passwordLabel) passwordLabel.textContent = t.password_label;
+    
+    // Update submit button
+    const submitBtn = document.querySelector('#login-form button[type="submit"] span');
+    if (submitBtn) submitBtn.textContent = t.signIn;
+}
+
+function updatePageTitles() {
+    const t = translations[localStorage.getItem('dashboard-lang') || 'en'];
+    const activeNav = document.querySelector('.nav-item.active');
+    if (activeNav) {
+        const page = activeNav.dataset.page;
+        const titleEl = document.querySelector('.page-title');
+        const subtitleEl = document.querySelector('.page-subtitle');
+        
+        if (titleEl && subtitleEl) {
+            if (page === 'products') {
+                titleEl.textContent = t.products;
+                subtitleEl.textContent = t.manageProducts;
+            } else if (page === 'api-keys') {
+                titleEl.textContent = t.apiKeys;
+                subtitleEl.textContent = t.manageApiKeys;
+            } else if (page === 'audit-logs') {
+                titleEl.textContent = t.auditLogs;
+                subtitleEl.textContent = t.auditHistory;
+            }
+        }
+    }
+}
+
+// Initialize language on load
+document.addEventListener('DOMContentLoaded', () => {
+    const savedLang = localStorage.getItem('dashboard-lang') || 'en';
+    setLanguage(savedLang);
+});
